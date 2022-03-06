@@ -155,10 +155,78 @@ router.route("/summary").get((req, res) => {
     },
   ])
     .then((expense) => {
-      console.log("expense", expense);
       res.json(expense);
     })
     .catch((err) => res.status(400).json("Error :" + err));
 });
 
+router.route("/details").get((req, res) => {
+  let branch = req.query.branch;
+  let startdate = req.query.startdate;
+  let enddate = req.query.enddate;
+
+  if (!startdate) {
+    startdate = new Date();
+    startdate.setDate(1);
+    startdate.setHours(0, 0, 0, 0);
+  } else {
+    startdate = new Date(startdate);
+    startdate.setHours(0, 0, 0, 0);
+  }
+
+  if (!enddate) {
+    enddate = new Date();
+  } else {
+    enddate = new Date(enddate);
+    enddate.setHours(23, 59, 59, 100);
+  }
+
+  const matchObj = {
+    createdAt: { $gte: startdate, $lte: enddate },
+  };
+
+  if (branch) {
+    matchObj["branch"] = mongoose.Types.ObjectId(branch);
+  }
+
+  Expense.aggregate([
+    { $set: { category: { $toObjectId: "$category" } } },
+    { $set: { branch: { $toObjectId: "$branch" } } },
+    {
+      $lookup: {
+        from: "expensecategories",
+        let: {
+          categoryId: "$category",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$categoryId"],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              name: 1,
+            },
+          },
+        ],
+        as: "categoryName",
+      },
+    },
+    { $unwind: "$categoryName" },
+    { $set: { category: "$categoryName.name" } },
+    { $unset: "categoryName" },
+    {
+      $match: matchObj,
+    },
+  ])
+    .then((expense) => {
+      // console.log("expense", expense);
+      res.json(expense);
+    })
+    .catch((err) => res.status(400).json("Error :" + err));
+});
 module.exports = router;
