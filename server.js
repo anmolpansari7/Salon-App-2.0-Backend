@@ -24,6 +24,7 @@ const customerRouter = require("./routes/customer");
 const inventoryRouter = require("./routes/inventory");
 const expenseRouter = require("./routes/expense");
 const branchRouter = require("./routes/branch");
+const packageRouter = require("./routes/package");
 
 // const orderRouter = require("./routes/order");
 // const pricelistRouter = require("./routes/pricelist");
@@ -38,6 +39,7 @@ app.use("/customer", customerRouter);
 app.use("/inventory", inventoryRouter);
 app.use("/expense", expenseRouter);
 app.use("/branch", branchRouter);
+app.use("/package", packageRouter);
 
 // app.use("/order", orderRouter);
 // app.use("/pricelist", pricelistRouter);

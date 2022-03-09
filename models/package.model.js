@@ -1,4 +1,4 @@
-const mongoose = require("mognoose");
+const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
@@ -7,12 +7,12 @@ const packageSchema = new Schema(
     gender: String,
     name: String,
     services: Array,
-    total: Number,
-    packAmount: Number,
-    maxNumberUsage: Number,
+    totalAmount: Number,
+    packageAmount: Number,
+    maxUsage: Number,
     validFrom: Date,
     validTill: Date,
-    customers: Array,
+    customers: { type: Array, default: [] },
   },
   {
     timestamps: true,
