@@ -1,17 +1,121 @@
 const router = require("express").Router();
 let Package = require("../models/package.model");
 
-// router.route("/").get((req, res) => {
-//   let status = req.query.status;
-//   let startDate = req.query.startDate;
-//   let endDate = req.query.endDate;
+router.route("/").get((req, res) => {
+  let status = req.query.status;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
 
-//   const matchObj = {
-//     createdAt: { $gte: startdate, $lte: enddate },
-//   };
+  if (!startDate) {
+    let newDate = new Date();
+    const currYear = newDate.getFullYear();
+    newDate.setFullYear(currYear - 5);
+    startDate = newDate;
+  } else {
+    startDate = new Date(startDate);
+    startDate.setHours(0, 0, 0, 0);
+  }
 
-//   Package.find()
-// })
+  if (!endDate) {
+    let newDate = new Date();
+    const currYear = newDate.getFullYear();
+    newDate.setFullYear(currYear + 5);
+    endDate = newDate;
+  } else {
+    endDate = new Date(endDate);
+    endDate.setHours(23, 59, 59, 100);
+  }
+
+  let matchObj = {
+    $or: [
+      { validFrom: { $gte: startDate, $lte: endDate } },
+      { validTill: { $gte: startDate, $lte: endDate } },
+    ],
+  };
+
+  if (status === "active") {
+    matchObj = {
+      $and: [
+        {
+          $or: [
+            { validFrom: { $gte: startDate, $lte: endDate } },
+            { validTill: { $gte: startDate, $lte: endDate } },
+          ],
+        },
+        {
+          validTill: { $gt: new Date() },
+        },
+      ],
+    };
+  } else if (status === "expired") {
+    matchObj = {
+      $and: [
+        {
+          $or: [
+            { validFrom: { $gte: startDate, $lte: endDate } },
+            { validTill: { $gte: startDate, $lte: endDate } },
+          ],
+        },
+        {
+          validTill: { $lt: new Date() },
+        },
+      ],
+    };
+  }
+
+  Package.aggregate([
+    { $unwind: "$services" },
+    { $set: { services: { $toObjectId: "$services" } } },
+    {
+      $lookup: {
+        from: "services",
+        let: {
+          serviceId: "$services",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$serviceId"],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              name: 1,
+            },
+          },
+        ],
+        as: "serviceName",
+      },
+    },
+    { $unwind: "$serviceName" },
+    { $set: { services: "$serviceName.name" } },
+    { $unset: "serviceName" },
+    {
+      $match: matchObj,
+    },
+    {
+      $group: {
+        _id: "$_id",
+        name: { $first: "$name" },
+        gender: { $first: "$gender" },
+        packageAmount: { $first: "$packageAmount" },
+        totalAmount: { $first: "$totalAmount" },
+        validFrom: { $first: "$validFrom" },
+        validTill: { $first: "$validTill" },
+        createdAt: { $first: "$createdAt" },
+        maxUsage: { $first: "$maxUsage" },
+        services: { $push: "$services" },
+      },
+    },
+  ])
+    .then((packages) => {
+      res.json(packages);
+    })
+    .catch((err) => res.status(400).json("Error :" + err));
+});
 
 router.route("/create").post((req, res) => {
   const newPackage = new Package({
@@ -30,6 +134,36 @@ router.route("/create").post((req, res) => {
     .save()
     .then(() => res.json("Package Saved !"))
     .catch((err) => res.status(400).json("Error: " + err));
+});
+
+router.route("/active-package-list").get((req, res) => {
+  let startDate = new Date();
+  const currYear = startDate.getFullYear();
+  startDate.setFullYear(currYear - 5);
+
+  let endDate = new Date();
+  endDate.setFullYear(currYear + 5);
+
+  Package.aggregate([
+    {
+      $match: {
+        $or: [
+          { validFrom: { $gte: startDate, $lte: endDate } },
+          { validTill: { $gte: startDate, $lte: endDate } },
+        ],
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+      },
+    },
+  ])
+    .then((packages) => {
+      res.json(packages);
+    })
+    .catch((err) => res.status(400).json("Error :" + err));
 });
 
 module.exports = router;
