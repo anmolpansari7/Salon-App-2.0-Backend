@@ -5,64 +5,70 @@ router.route("/").get((req, res) => {
   let status = req.query.status;
   let startDate = req.query.startDate;
   let endDate = req.query.endDate;
+  let name = req.query.name;
+  const queryPattern = new RegExp(name, "gi");
 
-  if (!startDate) {
-    let newDate = new Date();
-    const currYear = newDate.getFullYear();
-    newDate.setFullYear(currYear - 5);
-    startDate = newDate;
-  } else {
-    startDate = new Date(startDate);
-    startDate.setHours(0, 0, 0, 0);
-  }
+  let matchObj;
+  if (!name) {
+    if (!startDate) {
+      let newDate = new Date();
+      const currYear = newDate.getFullYear();
+      newDate.setFullYear(currYear - 5);
+      startDate = newDate;
+    } else {
+      startDate = new Date(startDate);
+      startDate.setHours(0, 0, 0, 0);
+    }
 
-  if (!endDate) {
-    let newDate = new Date();
-    const currYear = newDate.getFullYear();
-    newDate.setFullYear(currYear + 5);
-    endDate = newDate;
-  } else {
-    endDate = new Date(endDate);
-    endDate.setHours(23, 59, 59, 100);
-  }
+    if (!endDate) {
+      let newDate = new Date();
+      const currYear = newDate.getFullYear();
+      newDate.setFullYear(currYear + 5);
+      endDate = newDate;
+    } else {
+      endDate = new Date(endDate);
+      endDate.setHours(23, 59, 59, 100);
+    }
 
-  let matchObj = {
-    $or: [
-      { validFrom: { $gte: startDate, $lte: endDate } },
-      { validTill: { $gte: startDate, $lte: endDate } },
-    ],
-  };
-
-  if (status === "active") {
     matchObj = {
-      $and: [
-        {
-          $or: [
-            { validFrom: { $gte: startDate, $lte: endDate } },
-            { validTill: { $gte: startDate, $lte: endDate } },
-          ],
-        },
-        {
-          validTill: { $gt: new Date() },
-        },
+      $or: [
+        { validFrom: { $gte: startDate, $lte: endDate } },
+        { validTill: { $gte: startDate, $lte: endDate } },
       ],
     };
-  } else if (status === "expired") {
-    matchObj = {
-      $and: [
-        {
-          $or: [
-            { validFrom: { $gte: startDate, $lte: endDate } },
-            { validTill: { $gte: startDate, $lte: endDate } },
-          ],
-        },
-        {
-          validTill: { $lt: new Date() },
-        },
-      ],
-    };
-  }
 
+    if (status === "active") {
+      matchObj = {
+        $and: [
+          {
+            $or: [
+              { validFrom: { $gte: startDate, $lte: endDate } },
+              { validTill: { $gte: startDate, $lte: endDate } },
+            ],
+          },
+          {
+            validTill: { $gt: new Date() },
+          },
+        ],
+      };
+    } else if (status === "expired") {
+      matchObj = {
+        $and: [
+          {
+            $or: [
+              { validFrom: { $gte: startDate, $lte: endDate } },
+              { validTill: { $gte: startDate, $lte: endDate } },
+            ],
+          },
+          {
+            validTill: { $lt: new Date() },
+          },
+        ],
+      };
+    }
+  } else {
+    matchObj = { name: { $regex: queryPattern } };
+  }
   Package.aggregate([
     { $unwind: "$services" },
     { $set: { services: { $toObjectId: "$services" } } },
@@ -108,6 +114,7 @@ router.route("/").get((req, res) => {
         createdAt: { $first: "$createdAt" },
         maxUsage: { $first: "$maxUsage" },
         services: { $push: "$services" },
+        customers: { $first: "$customers" },
       },
     },
   ])

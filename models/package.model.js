@@ -5,7 +5,7 @@ const Schema = mongoose.Schema;
 const packageSchema = new Schema(
   {
     gender: String,
-    name: String,
+    name: { type: String, index: true },
     services: Array,
     totalAmount: Number,
     packageAmount: Number,
