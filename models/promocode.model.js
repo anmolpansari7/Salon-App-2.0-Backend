@@ -5,8 +5,8 @@ const Schema = mongoose.Schema;
 const promoCodeSchema = new Schema(
   {
     promoCode: String,
-    validFrom: Date,
-    validTill: Date,
+    validFrom: { type: Date, index: true },
+    validTill: { type: Date, index: true },
     status: { type: String, default: "" },
     discountType: String,
     discountValue: Number,

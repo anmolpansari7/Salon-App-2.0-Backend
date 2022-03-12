@@ -27,38 +27,32 @@ router.route("/").get((req, res) => {
   }
 
   let matchObj = {
-    $or: [
-      { validFrom: { $gte: startDate, $lte: endDate } },
-      { validTill: { $gte: startDate, $lte: endDate } },
-    ],
+    $nor: [{ validFrom: { $gt: endDate } }, { validTill: { $lt: startDate } }],
   };
 
   if (status === "active") {
     matchObj = {
-      $and: [
-        {
-          $or: [
-            { validFrom: { $gte: startDate, $lte: endDate } },
-            { validTill: { $gte: startDate, $lte: endDate } },
-          ],
-        },
-        {
-          validTill: { $gt: new Date() },
-        },
+      $nor: [
+        { validFrom: { $gt: endDate } },
+        { validFrom: { $gt: new Date() } },
+        { validTill: { $lt: startDate } },
+        { validTill: { $lt: new Date() } },
       ],
     };
   } else if (status === "expired") {
     matchObj = {
-      $and: [
-        {
-          $or: [
-            { validFrom: { $gte: startDate, $lte: endDate } },
-            { validTill: { $gte: startDate, $lte: endDate } },
-          ],
-        },
-        {
-          validTill: { $lt: new Date() },
-        },
+      $nor: [
+        { validFrom: { $gt: endDate } },
+        { validTill: { $lt: startDate } },
+        { validTill: { $gt: new Date() } },
+      ],
+    };
+  } else if (status === "upcoming") {
+    matchObj = {
+      $nor: [
+        { validFrom: { $gt: endDate } },
+        { validTill: { $lt: startDate } },
+        { validFrom: { $lte: new Date() } },
       ],
     };
   }
@@ -71,6 +65,22 @@ router.route("/").get((req, res) => {
       res.json(promoCodes);
     })
     .catch((err) => res.status(400).json("Error :" + err));
+});
+
+// localhost:5000/promocode/:id
+router.route("/:id").patch((req, res) => {
+  const { id } = req.params;
+
+  PromoCode.findById(id)
+    .then((promocode) => {
+      promocode.status = req.body.status;
+
+      promocode
+        .save()
+        .then(() => res.json("Promocode status changed."))
+        .catch((err) => res.status(400).json("Err: " + err));
+    })
+    .catch((err) => res.status(400).json("Error : " + err));
 });
 
 router.route("/create").post((req, res) => {

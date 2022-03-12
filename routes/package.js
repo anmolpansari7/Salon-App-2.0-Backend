@@ -31,38 +31,26 @@ router.route("/").get((req, res) => {
     }
 
     matchObj = {
-      $or: [
-        { validFrom: { $gte: startDate, $lte: endDate } },
-        { validTill: { $gte: startDate, $lte: endDate } },
+      $nor: [
+        { validFrom: { $gt: endDate } },
+        { validTill: { $lt: startDate } },
       ],
     };
 
     if (status === "active") {
       matchObj = {
-        $and: [
-          {
-            $or: [
-              { validFrom: { $gte: startDate, $lte: endDate } },
-              { validTill: { $gte: startDate, $lte: endDate } },
-            ],
-          },
-          {
-            validTill: { $gt: new Date() },
-          },
+        $nor: [
+          { validFrom: { $gt: endDate } },
+          { validTill: { $lt: startDate } },
+          { validTill: { $lt: new Date() } },
         ],
       };
     } else if (status === "expired") {
       matchObj = {
-        $and: [
-          {
-            $or: [
-              { validFrom: { $gte: startDate, $lte: endDate } },
-              { validTill: { $gte: startDate, $lte: endDate } },
-            ],
-          },
-          {
-            validTill: { $lt: new Date() },
-          },
+        $nor: [
+          { validFrom: { $gt: endDate } },
+          { validTill: { $lt: startDate } },
+          { validTill: { $gt: new Date() } },
         ],
       };
     }
