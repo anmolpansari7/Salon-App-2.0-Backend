@@ -5,19 +5,58 @@ let Customer = require("../models/customer.model");
 // require("../passport-config")(passport);
 
 router.route("/").get((req, res) => {
-  Customer.find()
-    .then((customer) => res.json(customer))
-    .catch((err) => res.status(400).json("Error: " + err));
-});
+  let type = req.query.type;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let name = req.query.name;
+  let queryPattern = new RegExp(name, "gi");
 
-router.route("/total-female-customers").get((req, res) => {
-  Customer.count({ gender: "F" })
-    .then((customer) => res.json(customer))
-    .catch((err) => res.status(400).json("Error: " + err));
-});
+  let matchObj;
+  if (!name) {
+    if (!startDate) {
+      let newDate = new Date();
+      const currYear = newDate.getFullYear();
+      newDate.setFullYear(currYear - 20);
+      startDate = newDate;
+    } else {
+      startDate = new Date(startDate);
+      startDate.setHours(0, 0, 0, 0);
+    }
 
-router.route("/total-male-customers").get((req, res) => {
-  Customer.count({ gender: "M" })
+    if (!endDate) {
+      endDate = new Date();
+    } else {
+      endDate = new Date(endDate);
+      endDate.setHours(23, 59, 59, 100);
+    }
+
+    matchObj = {
+      createdAt: { $gte: startDate, $lte: endDate },
+    };
+
+    if (type === "visited") {
+      matchObj = {
+        updatedAt: { $gte: startDate, $lte: endDate },
+      };
+    } else if (type === "non-visited") {
+      matchObj = {
+        $nor: [{ updatedAt: { $gte: startDate, $lte: endDate } }],
+      };
+    }
+  } else {
+    matchObj = {
+      $or: [
+        { name: { $regex: queryPattern } },
+        { contact: { $regex: queryPattern } },
+      ],
+    };
+  }
+
+  Customer.aggregate([
+    {
+      $match: matchObj,
+    },
+  ])
     .then((customer) => res.json(customer))
     .catch((err) => res.status(400).json("Error: " + err));
 });

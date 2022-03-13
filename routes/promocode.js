@@ -30,7 +30,9 @@ router.route("/").get((req, res) => {
     $nor: [{ validFrom: { $gt: endDate } }, { validTill: { $lt: startDate } }],
   };
 
-  if (status === "active") {
+  if (status === "disabled") {
+    matchObj["status"] = "disabled";
+  } else if (status === "active") {
     matchObj = {
       $nor: [
         { validFrom: { $gt: endDate } },
@@ -39,6 +41,7 @@ router.route("/").get((req, res) => {
         { validTill: { $lt: new Date() } },
       ],
     };
+    matchObj["status"] = "";
   } else if (status === "expired") {
     matchObj = {
       $nor: [
@@ -47,6 +50,7 @@ router.route("/").get((req, res) => {
         { validTill: { $gt: new Date() } },
       ],
     };
+    matchObj["status"] = "";
   } else if (status === "upcoming") {
     matchObj = {
       $nor: [
@@ -55,6 +59,7 @@ router.route("/").get((req, res) => {
         { validFrom: { $lte: new Date() } },
       ],
     };
+    matchObj["status"] = "";
   }
   PromoCode.aggregate([
     {
@@ -67,7 +72,7 @@ router.route("/").get((req, res) => {
     .catch((err) => res.status(400).json("Error :" + err));
 });
 
-// localhost:5000/promocode/:id
+// localhost:5000/promocode/:id for status change
 router.route("/:id").patch((req, res) => {
   const { id } = req.params;
 
@@ -109,9 +114,11 @@ router.route("/active-promocode-list").get((req, res) => {
   PromoCode.aggregate([
     {
       $match: {
-        $or: [
-          { validFrom: { $gte: startDate, $lte: endDate } },
-          { validTill: { $gte: startDate, $lte: endDate } },
+        $nor: [
+          { validFrom: { $gt: endDate } },
+          { validTill: { $lt: startDate } },
+          { validTill: { $lt: new Date() } },
+          { status: "disabled" },
         ],
       },
     },
