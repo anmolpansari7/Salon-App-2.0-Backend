@@ -15,17 +15,7 @@ const InventoryItemSchema = new Schema(
       type: Number,
       required: true,
     },
-    quantity: {
-      type: Number,
-      required: true,
-    },
-    lastSoldOn: {
-      type: Date,
-    },
-    lastAddedOn: {
-      type: Date,
-      default: new Date(),
-    },
+    distributions: { type: Array, default: [] },
   },
   {
     timestamps: true,
