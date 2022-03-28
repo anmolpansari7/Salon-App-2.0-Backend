@@ -16,6 +16,7 @@ const InventoryItemSchema = new Schema(
       required: true,
     },
     distributions: { type: Array, default: [] },
+    status: { type: String, default: "active" },
   },
   {
     timestamps: true,
