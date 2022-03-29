@@ -26,6 +26,7 @@ const expenseRouter = require("./routes/expense");
 const branchRouter = require("./routes/branch");
 const packageRouter = require("./routes/package");
 const promoCodeRouter = require("./routes/promocode");
+const pointsCalculatorRouter = require("./routes/pointscalculator");
 
 // const orderRouter = require("./routes/order");
 // const pricelistRouter = require("./routes/pricelist");
@@ -42,6 +43,7 @@ app.use("/expense", expenseRouter);
 app.use("/branch", branchRouter);
 app.use("/package", packageRouter);
 app.use("/promocode", promoCodeRouter);
+app.use("/points-calculator", pointsCalculatorRouter);
 
 // app.use("/order", orderRouter);
 // app.use("/pricelist", pricelistRouter);
