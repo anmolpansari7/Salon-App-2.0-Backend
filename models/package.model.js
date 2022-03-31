@@ -10,8 +10,7 @@ const packageSchema = new Schema(
     totalAmount: Number,
     packageAmount: Number,
     maxUsage: Number,
-    validFrom: Date,
-    validTill: Date,
+    validFor: String,
     customers: { type: Array, default: [] },
   },
   {

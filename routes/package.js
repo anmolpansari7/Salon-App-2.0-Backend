@@ -1,8 +1,9 @@
 const router = require("express").Router();
 let Package = require("../models/package.model");
+let Customer = require("../models/customer.model");
+const { default: mongoose } = require("mongoose");
 
 router.route("/").get((req, res) => {
-  let status = req.query.status;
   let startDate = req.query.startDate;
   let endDate = req.query.endDate;
   let name = req.query.name;
@@ -13,7 +14,7 @@ router.route("/").get((req, res) => {
     if (!startDate) {
       let newDate = new Date();
       const currYear = newDate.getFullYear();
-      newDate.setFullYear(currYear - 5);
+      newDate.setFullYear(currYear - 10);
       startDate = newDate;
     } else {
       startDate = new Date(startDate);
@@ -23,7 +24,7 @@ router.route("/").get((req, res) => {
     if (!endDate) {
       let newDate = new Date();
       const currYear = newDate.getFullYear();
-      newDate.setFullYear(currYear + 5);
+      newDate.setFullYear(currYear + 10);
       endDate = newDate;
     } else {
       endDate = new Date(endDate);
@@ -32,28 +33,10 @@ router.route("/").get((req, res) => {
 
     matchObj = {
       $nor: [
-        { validFrom: { $gt: endDate } },
-        { validTill: { $lt: startDate } },
+        { createdAt: { $gt: endDate } },
+        { createdAt: { $lt: startDate } },
       ],
     };
-
-    if (status === "active") {
-      matchObj = {
-        $nor: [
-          { validFrom: { $gt: endDate } },
-          { validTill: { $lt: startDate } },
-          { validTill: { $lt: new Date() } },
-        ],
-      };
-    } else if (status === "expired") {
-      matchObj = {
-        $nor: [
-          { validFrom: { $gt: endDate } },
-          { validTill: { $lt: startDate } },
-          { validTill: { $gt: new Date() } },
-        ],
-      };
-    }
   } else {
     matchObj = { name: { $regex: queryPattern } };
   }
@@ -97,13 +80,15 @@ router.route("/").get((req, res) => {
         gender: { $first: "$gender" },
         packageAmount: { $first: "$packageAmount" },
         totalAmount: { $first: "$totalAmount" },
-        validFrom: { $first: "$validFrom" },
-        validTill: { $first: "$validTill" },
         createdAt: { $first: "$createdAt" },
+        validFor: { $first: "$validFor" },
         maxUsage: { $first: "$maxUsage" },
         services: { $push: "$services" },
         customers: { $first: "$customers" },
       },
+    },
+    {
+      $sort: { createdAt: 1 },
     },
   ])
     .then((packages) => {
@@ -120,8 +105,7 @@ router.route("/create").post((req, res) => {
     totalAmount: req.body.totalAmount,
     packageAmount: req.body.packageAmount,
     maxUsage: req.body.maxUsage,
-    validFrom: req.body.validFrom,
-    validTill: req.body.validTill,
+    validFor: req.body.validFor,
     customers: [],
   });
 
@@ -134,17 +118,17 @@ router.route("/create").post((req, res) => {
 router.route("/active-package-list").get((req, res) => {
   let startDate = new Date();
   const currYear = startDate.getFullYear();
-  startDate.setFullYear(currYear - 5);
+  startDate.setFullYear(currYear - 10);
 
   let endDate = new Date();
-  endDate.setFullYear(currYear + 5);
+  endDate.setFullYear(currYear + 10);
 
   Package.aggregate([
     {
       $match: {
-        $or: [
-          { validFrom: { $gte: startDate, $lte: endDate } },
-          { validTill: { $gte: startDate, $lte: endDate } },
+        $nor: [
+          { createdAt: { $gt: endDate } },
+          { createdAt: { $lt: startDate } },
         ],
       },
     },
@@ -152,6 +136,8 @@ router.route("/active-package-list").get((req, res) => {
       $project: {
         _id: 1,
         name: 1,
+        maxUsage: 1,
+        validFor: 1,
       },
     },
   ])
@@ -159,6 +145,35 @@ router.route("/active-package-list").get((req, res) => {
       res.json(packages);
     })
     .catch((err) => res.status(400).json("Error :" + err));
+});
+
+router.route("/assign-package").patch((req, res) => {
+  const customerIds = req.body.customerIds.map((id) =>
+    mongoose.Types.ObjectId(id)
+  );
+  const packageId = req.body.packageId;
+  const maxUsage = req.body.maxUsage;
+  const validTill = req.body.validTill;
+
+  const pack = {
+    packageId: packageId,
+    validTill: validTill,
+    UsageLeft: maxUsage,
+  };
+
+  Customer.find({
+    _id: { $in: customerIds },
+  })
+    .then((customers) => {
+      customers.forEach((customer) => {
+        customer.package.push(pack);
+        customer.save();
+      });
+      res.json("Package Assigned ! ");
+    })
+    .catch((err) => {
+      res.status(400).json("Error : " + err);
+    });
 });
 
 module.exports = router;
