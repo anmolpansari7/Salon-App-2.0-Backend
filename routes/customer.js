@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { default: mongoose } = require("mongoose");
 let Customer = require("../models/customer.model");
 
 // let passport = require("passport");
@@ -96,8 +97,72 @@ router.route("/details/:id").get(
   (req, res) => {
     const { id } = req.params;
 
-    Customer.findById(id)
-      .then((customer) => res.json(customer))
+    Customer.aggregate([
+      {
+        $match: { _id: mongoose.Types.ObjectId(id) },
+      },
+      {
+        $unwind: {
+          path: "$package",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      { $set: { packageId: { $toObjectId: "$package.packageId" } } },
+      {
+        $lookup: {
+          from: "packages",
+          let: {
+            packageId: "$packageId",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$packageId"],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                name: 1,
+                packageAmount: 1,
+                totalAmount: 1,
+                services: 1,
+              },
+            },
+          ],
+          as: "packageName",
+        },
+      },
+      {
+        $unwind: {
+          path: "$packageName",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      { $set: { "package.packageName": "$packageName.name" } },
+      { $set: { "package.packageAmount": "$packageName.packageAmount" } },
+      { $set: { "package.totalAmount": "$packageName.totalAmount" } },
+      { $set: { "package.services": "$packageName.services" } },
+      { $unset: "packageName" },
+      { $unset: "packageId" },
+      {
+        $group: {
+          _id: "$_id",
+          name: { $first: "$name" },
+          gender: { $first: "$gender" },
+          dob: { $first: "$dob" },
+          dues: { $first: "$dues" },
+          contact: { $first: "$contact" },
+          createdAt: { $first: "$createdAt" },
+          address: { $first: "$address" },
+          package: { $push: "$package" },
+          points: { $first: "$points" },
+        },
+      },
+    ])
+      .then((customer) => res.json(customer[0]))
       .catch((err) => res.status(400).json("Error : " + err));
   }
 );
