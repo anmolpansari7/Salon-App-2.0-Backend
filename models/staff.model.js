@@ -5,11 +5,25 @@ const Schema = mongoose.Schema;
 const staffSchema = new Schema(
   {
     gender: { type: String, required: true },
-    name: { type: String, required: true },
-    contact: { type: String, required: true },
-    address: { type: String, required: true },
-    due: { type: Number, required: true },
-    aadhar: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+    contact: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+    dob: {
+      type: Date,
+      required: true,
+    },
+    address: String,
+    due: Number,
+    aadhar: String,
   },
   {
     timestamps: true,
