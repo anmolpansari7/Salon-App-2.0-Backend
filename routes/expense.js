@@ -219,6 +219,34 @@ router.route("/details").get((req, res) => {
     { $unwind: "$categoryName" },
     { $set: { category: "$categoryName.name" } },
     { $unset: "categoryName" },
+    { $set: { branch: { $toObjectId: "$branch" } } },
+    {
+      $lookup: {
+        from: "branches",
+        let: {
+          branchId: "$branch",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$branchId"],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              name: 1,
+            },
+          },
+        ],
+        as: "branchName",
+      },
+    },
+    { $unwind: "$branchName" },
+    { $set: { branch: "$branchName.name" } },
+    { $unset: "branchName" },
     {
       $match: matchObj,
     },
