@@ -28,14 +28,11 @@ const packageRouter = require("./routes/package");
 const promoCodeRouter = require("./routes/promocode");
 const pointsCalculatorRouter = require("./routes/pointscalculator");
 const staffRouter = require("./routes/staff");
+const authenticationRouter = require("./routes/authentication");
 
 // const orderRouter = require("./routes/order");
-// const pricelistRouter = require("./routes/pricelist");
-// const deallistRouter = require("./routes/deallist");
-// const pointsCalculatorRouter = require("./routes/pointsCalculator");
 // const reportRouter = require("./routes/report");
 // const sendSMSRouter = require("./routes/send_sms");
-// const authenticationRouter = require("./routes/authentication");
 
 app.use("/service", serviceRouter);
 app.use("/customer", customerRouter);
@@ -46,14 +43,11 @@ app.use("/package", packageRouter);
 app.use("/promocode", promoCodeRouter);
 app.use("/points-calculator", pointsCalculatorRouter);
 app.use("/staff", staffRouter);
+app.use("/authentication", authenticationRouter);
 
 // app.use("/order", orderRouter);
-// app.use("/pricelist", pricelistRouter);
-// app.use("/deallist", deallistRouter);
-// app.use("/pointsCalculator", pointsCalculatorRouter);
 // app.use("/report", reportRouter);
 // app.use("/send_sms", sendSMSRouter);
-// app.use("/authentication", authenticationRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);

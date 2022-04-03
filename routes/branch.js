@@ -1,22 +1,31 @@
 const router = require("express").Router();
+const bcrypt = require("bcrypt");
 const Branch = require("../models/branch.model");
 
 router.route("/").get((req, res) => {
-  Branch.find()
+  Branch.find({
+    status: "active",
+  })
     .then((branches) => res.json(branches))
     .catch((err) => res.status(400).json("Error :" + err));
 });
 
-router.route("/add").post((req, res) => {
-  const newBranch = new Branch({
-    name: req.body.name,
-    password: req.body.password,
-  });
+router.route("/add").post(async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-  newBranch
-    .save()
-    .then(() => res.json("New Branch Added !"))
-    .catch((err) => res.status(400).json("Error : " + err));
+    const newBranch = new Branch({
+      name: req.body.name,
+      password: hashedPassword,
+    });
+
+    newBranch
+      .save()
+      .then(() => res.json("New Branch Added !"))
+      .catch((err) => res.status(400).json("Error : " + err));
+  } catch {
+    res.json("Faild to Register");
+  }
 });
 
 router.route("/delete/:id").patch((req, res) => {
