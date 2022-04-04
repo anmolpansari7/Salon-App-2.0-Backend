@@ -34,6 +34,7 @@ router.route("/").get((req, res) => {
             $project: {
               _id: 0,
               name: 1,
+              status: 1,
             },
           },
         ],
@@ -47,6 +48,7 @@ router.route("/").get((req, res) => {
       },
     },
     { $set: { "distributions.branch": "$branchName.name" } },
+    { $set: { "distributions.branchStatus": "$branchName.status" } },
     { $unset: "branchName" },
     { $unset: "branchId" },
     {

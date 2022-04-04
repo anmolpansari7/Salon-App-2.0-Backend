@@ -65,6 +65,9 @@ router.route("/").get((req, res) => {
     {
       $match: matchObj,
     },
+    {
+      $sort: { createdAt: -1 },
+    },
   ])
     .then((promoCodes) => {
       res.json(promoCodes);
