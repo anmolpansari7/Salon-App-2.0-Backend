@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { default: mongoose } = require("mongoose");
 let Customer = require("../models/customer.model");
+let ServiceSchema = require("../models/service.model");
 
 // let passport = require("passport");
 // require("../passport-config")(passport);
@@ -162,7 +163,23 @@ router.route("/details/:id").get(
         },
       },
     ])
-      .then((customer) => res.json(customer[0]))
+      .then(async (customer) => {
+        await Promise.all(
+          customer[0].package.map(async (pack) => {
+            let currentPackServices = [];
+            if (pack !== {}) {
+              await Promise.all(
+                pack.services.map(async (service) => {
+                  const item = await ServiceSchema.findById(service);
+                  currentPackServices.push(item.name);
+                })
+              );
+              pack.serviceNames = currentPackServices;
+            }
+          })
+        );
+        res.json(customer[0]);
+      })
       .catch((err) => res.status(400).json("Error : " + err));
   }
 );

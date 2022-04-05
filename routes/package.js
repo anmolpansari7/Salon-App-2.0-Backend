@@ -132,14 +132,6 @@ router.route("/active-package-list").get((req, res) => {
         ],
       },
     },
-    {
-      $project: {
-        _id: 1,
-        name: 1,
-        maxUsage: 1,
-        validFor: 1,
-      },
-    },
   ])
     .then((packages) => {
       res.json(packages);
