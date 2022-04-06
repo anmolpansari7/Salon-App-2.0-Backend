@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 
 const orderSchema = new Schema(
   {
+    type: { type: String, required: true },
     customerId: { type: String, required: true },
     serviceIds: Array,
     inventoryItemIds: Array,
@@ -14,6 +15,7 @@ const orderSchema = new Schema(
     pointsUsed: Number,
     pointsEarned: Number,
     discountGiven: Number,
+    promoCode: String,
     servedBy: { type: String, required: true },
   },
   {

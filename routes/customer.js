@@ -167,7 +167,7 @@ router.route("/details/:id").get(
         await Promise.all(
           customer[0].package.map(async (pack) => {
             let currentPackServices = [];
-            if (pack !== {}) {
+            if (pack.services !== undefined) {
               await Promise.all(
                 pack.services.map(async (service) => {
                   const item = await ServiceSchema.findById(service);
