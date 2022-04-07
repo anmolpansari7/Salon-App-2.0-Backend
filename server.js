@@ -29,8 +29,8 @@ const promoCodeRouter = require("./routes/promocode");
 const pointsCalculatorRouter = require("./routes/pointscalculator");
 const staffRouter = require("./routes/staff");
 const authenticationRouter = require("./routes/authentication");
+const orderRouter = require("./routes/order");
 
-// const orderRouter = require("./routes/order");
 // const reportRouter = require("./routes/report");
 // const sendSMSRouter = require("./routes/send_sms");
 
@@ -44,8 +44,8 @@ app.use("/promocode", promoCodeRouter);
 app.use("/points-calculator", pointsCalculatorRouter);
 app.use("/staff", staffRouter);
 app.use("/authentication", authenticationRouter);
+app.use("/order", orderRouter);
 
-// app.use("/order", orderRouter);
 // app.use("/report", reportRouter);
 // app.use("/send_sms", sendSMSRouter);
 

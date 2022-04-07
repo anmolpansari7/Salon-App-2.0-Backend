@@ -16,6 +16,7 @@ const orderSchema = new Schema(
     pointsEarned: Number,
     discountGiven: Number,
     promoCode: String,
+    packageId: String,
     servedBy: { type: String, required: true },
   },
   {
