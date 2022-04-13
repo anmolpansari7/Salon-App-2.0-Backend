@@ -187,12 +187,40 @@ router.route("/details/:id").get(
 
 router.route("/details/:id/orders").get((req, res) => {
   const { id } = req.params;
+  let staff = req.query.staff;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+
+  if (!startDate) {
+    let newDate = new Date();
+    const currYear = newDate.getFullYear();
+    newDate.setFullYear(currYear - 20);
+    startDate = newDate;
+  } else {
+    startDate = new Date(startDate);
+    startDate.setHours(0, 0, 0, 0);
+  }
+
+  if (!endDate) {
+    endDate = new Date();
+  } else {
+    endDate = new Date(endDate);
+    endDate.setHours(23, 59, 59, 100);
+  }
+
+  const matchObj = {
+    createdAt: { $gte: startDate, $lte: endDate },
+  };
+
+  if (staff) {
+    matchObj["servedBy"] = staff;
+  }
+
+  matchObj["customerId"] = id;
 
   Order.aggregate([
     {
-      $match: {
-        customerId: id,
-      },
+      $match: matchObj,
     },
     {
       $unwind: {
