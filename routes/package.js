@@ -140,9 +140,7 @@ router.route("/active-package-list").get((req, res) => {
 });
 
 router.route("/assign-package").patch((req, res) => {
-  const customerIds = req.body.customerIds.map((id) =>
-    mongoose.Types.ObjectId(id)
-  );
+  const customerId = mongoose.Types.ObjectId(req.body.customerId);
   const packageId = req.body.packageId;
   const maxUsage = req.body.maxUsage;
   const validTill = req.body.validTill;
@@ -153,14 +151,10 @@ router.route("/assign-package").patch((req, res) => {
     UsageLeft: maxUsage,
   };
 
-  Customer.find({
-    _id: { $in: customerIds },
-  })
-    .then((customers) => {
-      customers.forEach((customer) => {
-        customer.package.push(pack);
-        customer.save();
-      });
+  Customer.findById(customerId)
+    .then((customer) => {
+      customer.package.push(pack);
+      customer.save();
       res.json("Package Assigned ! ");
     })
     .catch((err) => {

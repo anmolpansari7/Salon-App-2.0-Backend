@@ -5,6 +5,7 @@ const Schema = mongoose.Schema;
 const orderSchema = new Schema(
   {
     type: { type: String, required: true },
+    branchId: { type: String, required: true },
     customerId: { type: String, required: true },
     serviceIds: Array,
     inventoryItemIds: Array,

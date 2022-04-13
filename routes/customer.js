@@ -2,6 +2,7 @@ const router = require("express").Router();
 const { default: mongoose } = require("mongoose");
 let Customer = require("../models/customer.model");
 let ServiceSchema = require("../models/service.model");
+let Order = require("../models/order.model");
 
 // let passport = require("passport");
 // require("../passport-config")(passport);
@@ -183,6 +184,250 @@ router.route("/details/:id").get(
       .catch((err) => res.status(400).json("Error : " + err));
   }
 );
+
+router.route("/details/:id/orders").get((req, res) => {
+  const { id } = req.params;
+
+  Order.aggregate([
+    {
+      $match: {
+        customerId: id,
+      },
+    },
+    {
+      $unwind: {
+        path: "$serviceIds",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    { $set: { serviceId: { $toObjectId: "$serviceIds" } } },
+    { $unset: "serviceIds" },
+    {
+      $lookup: {
+        from: "services",
+        let: {
+          serviceId: "$serviceId",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$serviceId"],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              name: 1,
+            },
+          },
+        ],
+        as: "serviceName",
+      },
+    },
+    {
+      $unwind: {
+        path: "$serviceName",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $unset: "serviceId",
+    },
+    { $set: { serviceName: "$serviceName.name" } },
+    {
+      $group: {
+        _id: "$_id",
+        type: { $first: "$type" },
+        serviceName: { $push: "$serviceName" },
+        inventoryItemIds: { $first: "$inventoryItemIds" },
+        packageId: { $first: "$packageId" },
+        totalAmount: { $first: "$totalAmount" },
+        discountGiven: { $first: "$discountGiven" },
+        paidAmount: { $first: "$paidAmount" },
+        paymentMode: { $first: "$paymentMode" },
+        promoCode: { $first: "$promoCode" },
+        pointsUsed: { $first: "$pointsUsed" },
+        pointsEarned: { $first: "$pointsEarned" },
+        remark: { $first: "$remark" },
+        servedBy: { $first: "$servedBy" },
+        createdAt: { $first: "$createdAt" },
+      },
+    },
+    {
+      $group: {
+        _id: "$_id",
+        type: { $first: "$type" },
+        serviceName: { $push: "$serviceName" },
+        inventoryItemIds: { $first: "$inventoryItemIds" },
+        packageId: { $first: "$packageId" },
+        totalAmount: { $first: "$totalAmount" },
+        discountGiven: { $first: "$discountGiven" },
+        paidAmount: { $first: "$paidAmount" },
+        paymentMode: { $first: "$paymentMode" },
+        promoCode: { $first: "$promoCode" },
+        pointsUsed: { $first: "$pointsUsed" },
+        pointsEarned: { $first: "$pointsEarned" },
+        remark: { $first: "$remark" },
+        servedBy: { $first: "$servedBy" },
+        createdAt: { $first: "$createdAt" },
+      },
+    },
+    {
+      $unwind: {
+        path: "$inventoryItemIds",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    { $set: { inventoryItemId: { $toObjectId: "$inventoryItemIds" } } },
+    { $unset: "inventoryItemIds" },
+    {
+      $lookup: {
+        from: "inventoryitems",
+        let: {
+          inventoryItemId: "$inventoryItemId",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$inventoryItemId"],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              name: 1,
+            },
+          },
+        ],
+        as: "inventoryItemName",
+      },
+    },
+    {
+      $unwind: {
+        path: "$inventoryItemName",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $unset: "inventoryItemId",
+    },
+    { $set: { inventoryItemName: "$inventoryItemName.name" } },
+    {
+      $group: {
+        _id: "$_id",
+        type: { $first: "$type" },
+        serviceName: { $first: "$serviceName" },
+        inventoryItemName: { $push: "$inventoryItemName" },
+        packageId: { $first: "$packageId" },
+        totalAmount: { $first: "$totalAmount" },
+        discountGiven: { $first: "$discountGiven" },
+        paidAmount: { $first: "$paidAmount" },
+        paymentMode: { $first: "$paymentMode" },
+        promoCode: { $first: "$promoCode" },
+        pointsUsed: { $first: "$pointsUsed" },
+        pointsEarned: { $first: "$pointsEarned" },
+        remark: { $first: "$remark" },
+        servedBy: { $first: "$servedBy" },
+        createdAt: { $first: "$createdAt" },
+      },
+    },
+    { $set: { servedById: { $toObjectId: "$servedBy" } } },
+    {
+      $lookup: {
+        from: "staffs",
+        let: {
+          staffId: "$servedById",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$staffId"],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              name: 1,
+            },
+          },
+        ],
+        as: "staffMemberName",
+      },
+    },
+    {
+      $unwind: {
+        path: "$staffMemberName",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $unset: "servedById",
+    },
+    { $set: { servedBy: "$staffMemberName.name" } },
+    { $unset: "staffMemberName" },
+    ///,
+    {
+      $set: {
+        packageId: {
+          $cond: {
+            if: { $eq: ["$packageId", ""] },
+            then: new mongoose.Types.ObjectId(),
+            else: { $toObjectId: "$packageId" },
+          },
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "packages",
+        let: {
+          packageId: "$packageId",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$packageId"],
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              name: 1,
+            },
+          },
+        ],
+        as: "packageName",
+      },
+    },
+    {
+      $unwind: {
+        path: "$packageName",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $unset: "packageId",
+    },
+    { $set: { packageName: "$packageName.name" } },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+  ])
+    .then((order) => {
+      res.json(order);
+    })
+    .catch((err) => res.status(400).json("Error : " + err));
+});
 
 router.route("/add").post(
   //   passport.authenticate("jwt", { session: false }),
