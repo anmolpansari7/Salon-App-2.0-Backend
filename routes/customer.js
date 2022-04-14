@@ -59,6 +59,9 @@ router.route("/").get((req, res) => {
     {
       $match: matchObj,
     },
+    {
+      $sort: { updatedAt: -1 },
+    },
   ])
     .then((customer) => res.json(customer))
     .catch((err) => res.status(400).json("Error: " + err));

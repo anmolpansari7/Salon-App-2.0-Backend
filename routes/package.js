@@ -88,7 +88,7 @@ router.route("/").get((req, res) => {
       },
     },
     {
-      $sort: { createdAt: 1 },
+      $sort: { createdAt: -1 },
     },
   ])
     .then((packages) => {

@@ -141,9 +141,102 @@ router.route("/").get((req, res) => {
     { $set: { staffName: "$staffName.name" } },
     { $unset: "staffId" },
     { $unset: "servedBy" },
+    {
+      $sort: { createdAt: -1 },
+    },
   ])
     .then((order) => res.json(order))
     .catch((err) => res.status(400).json("Error: " + err));
+});
+
+router.route("/todays-report-summary").get(async (req, res) => {
+  let today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  await Order.aggregate([
+    { $match: { createdAt: { $gte: today } } },
+    {
+      $group: {
+        _id: null,
+        totalCustomers: { $sum: 1 },
+        totalAmount: { $sum: "$totalAmount" },
+        paidAmount: { $sum: "$paidAmount" },
+        pointsUsed: { $sum: "$pointsUsed" },
+        pointsEarned: { $sum: "$pointsEarned" },
+      },
+    },
+  ])
+    .then((todaysOverview) => {
+      res.json(todaysOverview[0]);
+    })
+    .catch((err) => res.status(400).json("Err : " + err));
+});
+
+router.route("/report-summary").get(async (req, res) => {
+  let branch = req.query.branch;
+  let staff = req.query.staff;
+  let startDate = req.query.startDate;
+  let endDate = req.query.endDate;
+  let name = req.query.name;
+  let queryPattern = new RegExp(name, "gi");
+
+  let matchObj;
+  if (!name) {
+    if (!startDate) {
+      let newDate = new Date();
+      const currYear = newDate.getFullYear();
+      newDate.setFullYear(currYear - 1);
+      startDate = newDate;
+    } else {
+      startDate = new Date(startDate);
+      startDate.setHours(0, 0, 0, 0);
+    }
+
+    if (!endDate) {
+      endDate = new Date();
+    } else {
+      endDate = new Date(endDate);
+      endDate.setHours(23, 59, 59, 100);
+    }
+
+    matchObj = {
+      createdAt: { $gte: startDate, $lte: endDate },
+    };
+  }
+  // else {
+  //   matchObj = {
+  //     $or: [
+  //       { name: { $regex: queryPattern } },
+  //       { contact: { $regex: queryPattern } },
+  //     ],
+  //   };
+  // }
+
+  if (branch) {
+    matchObj["branchId"] = branch;
+  }
+
+  if (staff) {
+    matchObj["servedBy"] = staff;
+  }
+
+  await Order.aggregate([
+    { $match: matchObj },
+    {
+      $group: {
+        _id: null,
+        totalCustomers: { $sum: 1 },
+        totalAmount: { $sum: "$totalAmount" },
+        paidAmount: { $sum: "$paidAmount" },
+        pointsUsed: { $sum: "$pointsUsed" },
+        pointsEarned: { $sum: "$pointsEarned" },
+      },
+    },
+  ])
+    .then((summary) => {
+      res.json(summary[0]);
+    })
+    .catch((err) => res.status(400).json("Err : " + err));
 });
 
 // router.route("/overview").get(
