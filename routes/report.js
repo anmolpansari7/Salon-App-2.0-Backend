@@ -167,6 +167,15 @@ router.route("/todays-report-summary").get(async (req, res) => {
     },
   ])
     .then((todaysOverview) => {
+      if (todaysOverview.length === 0) {
+        todaysOverview.push({
+          totalCustomers: 0,
+          totalAmount: 0,
+          paidAmount: 0,
+          pointsUsed: 0,
+          pointsEarned: 0,
+        });
+      }
       res.json(todaysOverview[0]);
     })
     .catch((err) => res.status(400).json("Err : " + err));
