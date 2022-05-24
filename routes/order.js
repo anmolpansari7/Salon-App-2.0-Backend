@@ -1,6 +1,7 @@
 const router = require("express").Router();
 let Order = require("../models/order.model");
 let Customer = require("../models/customer.model");
+// let InventoryItem = require("../models/InvetoryItem.model");
 
 router.route("/").post(async (req, res) => {
   const newOrder = new Order({

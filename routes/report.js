@@ -1,16 +1,18 @@
 const router = require("express").Router();
+const mongoose = require("mongoose");
+const Customer = require("../models/customer.model");
 let Order = require("../models/order.model");
-
 // let passport = require("passport");
 // require("../passport-config")(passport);
 
-router.route("/").get((req, res) => {
+router.route("/").get(async (req, res) => {
   let branch = req.query.branch;
   let staff = req.query.staff;
   let startDate = req.query.startDate;
   let endDate = req.query.endDate;
   let name = req.query.name;
   let queryPattern = new RegExp(name, "gi");
+  const customerIds = [];
 
   let matchObj;
   if (!name) {
@@ -34,15 +36,27 @@ router.route("/").get((req, res) => {
     matchObj = {
       createdAt: { $gte: startDate, $lte: endDate },
     };
+  } else {
+    const customers = await Customer.find({
+      $or: [
+        { name: { $regex: queryPattern } },
+        { contact: { $regex: queryPattern } },
+      ],
+    });
+
+    if (customers) {
+      customers.forEach((data) => {
+        customerIds.push(data._id.toString());
+      });
+      if (customerIds?.length) {
+        matchObj = {
+          customerId: {
+            $in: customerIds,
+          },
+        };
+      }
+    }
   }
-  // else {
-  //   matchObj = {
-  //     $or: [
-  //       { name: { $regex: queryPattern } },
-  //       { contact: { $regex: queryPattern } },
-  //     ],
-  //   };
-  // }
 
   if (branch) {
     matchObj["branchId"] = branch;
@@ -52,6 +66,10 @@ router.route("/").get((req, res) => {
     matchObj["servedBy"] = staff;
   }
 
+  if (!matchObj) {
+    res.status(200).json([]);
+    return;
+  }
   Order.aggregate([
     {
       $match: matchObj,
@@ -145,8 +163,14 @@ router.route("/").get((req, res) => {
       $sort: { createdAt: -1 },
     },
   ])
-    .then((order) => res.json(order))
-    .catch((err) => res.status(400).json("Error: " + err));
+    .then((order) => {
+      console.log("order", order);
+      res.json(order);
+    })
+    .catch((err) => {
+      console.error("error:", err);
+      res.status(400).json("Error: " + err);
+    });
 });
 
 router.route("/todays-report-summary").get(async (req, res) => {
@@ -190,6 +214,7 @@ router.route("/report-summary").get(async (req, res) => {
   let queryPattern = new RegExp(name, "gi");
 
   let matchObj;
+  let customerIds = [];
   if (!name) {
     if (!startDate) {
       let newDate = new Date();
@@ -211,15 +236,26 @@ router.route("/report-summary").get(async (req, res) => {
     matchObj = {
       createdAt: { $gte: startDate, $lte: endDate },
     };
+  } else {
+    const customers = await Customer.find({
+      $or: [
+        { name: { $regex: queryPattern } },
+        { contact: { $regex: queryPattern } },
+      ],
+    });
+    if (customers) {
+      customers.forEach((data) => {
+        customerIds.push(data._id.toString());
+      });
+      if (customerIds?.length) {
+        matchObj = {
+          customerId: {
+            $in: customerIds,
+          },
+        };
+      }
+    }
   }
-  // else {
-  //   matchObj = {
-  //     $or: [
-  //       { name: { $regex: queryPattern } },
-  //       { contact: { $regex: queryPattern } },
-  //     ],
-  //   };
-  // }
 
   if (branch) {
     matchObj["branchId"] = branch;
@@ -229,7 +265,19 @@ router.route("/report-summary").get(async (req, res) => {
     matchObj["servedBy"] = staff;
   }
 
-  await Order.aggregate([
+  if (!matchObj) {
+    const emptyObj = {
+      _id: null,
+      totalCustomers: 0,
+      totalAmount: 0,
+      paidAmount: 0,
+      pointsUsed: 0,
+      pointsEarned: 0,
+    };
+    res.status(200).json(emptyObj);
+    return;
+  }
+  Order.aggregate([
     { $match: matchObj },
     {
       $group: {
@@ -245,239 +293,27 @@ router.route("/report-summary").get(async (req, res) => {
     .then((summary) => {
       res.json(summary[0]);
     })
-    .catch((err) => res.status(400).json("Err : " + err));
+    .catch((err) => {
+      console.error("Error while fetching report summery:", err);
+      res.status(400).json("Err : " + err);
+    });
 });
 
-// router.route("/overview").get(
-//   //   passport.authenticate("jwt", { session: false }),
-//   async (req, res) => {
-//     let overview = [];
-//     let notFound = {
-//       _id: null,
-//       totalCustomers: 0,
-//       totalAmount: 0,
-//       paidAmount: 0,
-//       pointsUsed: 0,
-//       pointsGiven: 0,
-//       servedBy: "",
-//     };
+router.route("/:query").get((req, res) => {
+  const { query } = req.params;
 
-//     let today = new Date();
-//     today.setHours(0, 0, 0, 0);
+  console.log(query);
 
-//     await Order.aggregate([
-//       { $match: { createdAt: { $gte: today } } },
-//       {
-//         $group: {
-//           _id: null,
-//           totalCustomers: { $sum: 1 },
-//           totalAmount: { $sum: "$totalAmount" },
-//           paidAmount: { $sum: "$paidAmount" },
-//           pointsUsed: { $sum: "$pointsUsed" },
-//           pointsGiven: { $sum: "$pointsGiven" },
-//         },
-//       },
-//     ])
-//       .then((todaysOverview) => {
-//         if (todaysOverview.length !== 0) {
-//           overview.push(...todaysOverview);
-//         } else {
-//           overview.push(notFound);
-//         }
-//       })
-//       .catch((err) => res.status(400).json("Err : " + err));
+  // const queryPattern = new RegExp(query, "gi");
 
-//     today = new Date();
-//     let day = today.getDay();
-//     today.setHours(0, 0, 0, 0);
-//     today.setDate(today.getDate() - day);
-
-//     await Order.aggregate([
-//       {
-//         $match: {
-//           createdAt: { $gte: today },
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: null,
-//           totalCustomers: { $sum: 1 },
-//           totalAmount: { $sum: "$totalAmount" },
-//           paidAmount: { $sum: "$paidAmount" },
-//           pointsUsed: { $sum: "$pointsUsed" },
-//           pointsGiven: { $sum: "$pointsGiven" },
-//         },
-//       },
-//     ])
-//       .then((weeksOverview) => {
-//         if (weeksOverview.length !== 0) {
-//           overview.push(...weeksOverview);
-//         } else {
-//           overview.push(notFound);
-//         }
-//       })
-//       .catch((err) => res.status(400).json("Err : " + err));
-
-//     let thisMonth = new Date();
-//     thisMonth.setDate(1);
-//     thisMonth.setHours(0, 0, 0, 0);
-
-//     await Order.aggregate([
-//       {
-//         $match: {
-//           createdAt: { $gte: thisMonth },
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: null,
-//           totalCustomers: { $sum: 1 },
-//           totalAmount: { $sum: "$totalAmount" },
-//           paidAmount: { $sum: "$paidAmount" },
-//           pointsUsed: { $sum: "$pointsUsed" },
-//           pointsGiven: { $sum: "$pointsGiven" },
-//         },
-//       },
-//     ])
-//       .then((monthsOverview) => {
-//         if (monthsOverview.length !== 0) {
-//           overview.push(...monthsOverview);
-//         } else {
-//           overview.push(notFound);
-//         }
-//       })
-//       .then(() => res.json(overview))
-//       .catch((err) => res.status(400).json("Err : " + err));
-//   }
-// );
-
-// router
-//   .route("/todayCustomers")
-//   .get(passport.authenticate("jwt", { session: false }), (req, res) => {
-//     let today = new Date();
-//     today.setHours(0, 0, 0, 0);
-
-//     Order.aggregate([
-//       { $match: { createdAt: { $gte: today } } },
-//       { $set: { customerId: { $toObjectId: "$customerId" } } },
-//       {
-//         $lookup: {
-//           from: "customers",
-//           localField: "customerId",
-//           foreignField: "_id",
-//           as: "customerDetails",
-//         },
-//       },
-//       {
-//         $unwind: "$customerDetails",
-//       },
-//       {
-//         $project: {
-//           totalAmount: 1,
-//           paidAmount: 1,
-//           paymentMode: 1,
-//           pointsUsed: 1,
-//           pointsGiven: 1,
-//           createdAt: 1,
-//           customerDetails: {
-//             name: 1,
-//             phone: 1,
-//           },
-//         },
-//       },
-//       {
-//         $sort: { createdAt: -1, _id: 1 },
-//       },
-//     ])
-//       .then((orders) => res.json(orders))
-//       .catch((err) => res.status(400).json("Err : " + err));
-//   });
-
-// router
-//   .route("/thisweekCustomers")
-//   .get(passport.authenticate("jwt", { session: false }), (req, res) => {
-//     let today = new Date();
-//     let day = today.getDay();
-//     today.setHours(0, 0, 0, 0);
-//     today.setDate(today.getDate() - day);
-
-//     Order.aggregate([
-//       { $match: { createdAt: { $gte: today } } },
-//       { $set: { customerId: { $toObjectId: "$customerId" } } },
-//       {
-//         $lookup: {
-//           from: "customers",
-//           localField: "customerId",
-//           foreignField: "_id",
-//           as: "customerDetails",
-//         },
-//       },
-//       {
-//         $unwind: "$customerDetails",
-//       },
-//       {
-//         $project: {
-//           totalAmount: 1,
-//           paidAmount: 1,
-//           paymentMode: 1,
-//           pointsUsed: 1,
-//           pointsGiven: 1,
-//           createdAt: 1,
-//           customerDetails: {
-//             name: 1,
-//             phone: 1,
-//           },
-//         },
-//       },
-//       {
-//         $sort: { createdAt: -1, _id: 1 },
-//       },
-//     ])
-//       .then((orders) => res.json(orders))
-//       .catch((err) => res.status(400).json("Err : " + err));
-//   });
-
-// router
-//   .route("/thismonthCustomers")
-//   .get(passport.authenticate("jwt", { session: false }), (req, res) => {
-//     let thisMonth = new Date();
-//     thisMonth.setDate(1);
-//     thisMonth.setHours(0, 0, 0, 0);
-
-//     Order.aggregate([
-//       { $match: { createdAt: { $gte: thisMonth } } },
-//       { $set: { customerId: { $toObjectId: "$customerId" } } },
-//       {
-//         $lookup: {
-//           from: "customers",
-//           localField: "customerId",
-//           foreignField: "_id",
-//           as: "customerDetails",
-//         },
-//       },
-//       {
-//         $unwind: "$customerDetails",
-//       },
-//       {
-//         $project: {
-//           totalAmount: 1,
-//           paidAmount: 1,
-//           paymentMode: 1,
-//           pointsUsed: 1,
-//           pointsGiven: 1,
-//           createdAt: 1,
-//           customerDetails: {
-//             name: 1,
-//             phone: 1,
-//           },
-//         },
-//       },
-//       {
-//         $sort: { createdAt: -1, _id: 1 },
-//       },
-//     ])
-//       .then((orders) => res.json(orders))
-//       .catch((err) => res.status(400).json("Err : " + err));
-//   });
+  // Customer.find({
+  //   $or: [
+  //     { name: { $regex: queryPattern } },
+  //     { contact: { $regex: queryPattern } },
+  //   ],
+  // })
+  //   .then((customer) => res.json(customer))
+  //   .catch((err) => res.status(400).json("Error: " + err));
+});
 
 module.exports = router;
