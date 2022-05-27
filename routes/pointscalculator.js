@@ -14,25 +14,23 @@ router.route("/").get((req, res) => {
     });
 });
 
-router
-  .route("/")
-  .post(passport.authenticate("jwt", { session: false }), (req, res) => {
-    const newpointsCalculator = new PointsCalculator({
-      forRupee: req.body.forRupee,
-      givenPoints: req.body.givenPoints,
-      forPoints: req.body.forPoints,
-      givenDiscount: req.body.givenDiscount,
-    });
-
-    newpointsCalculator
-      .save()
-      .then(() => {
-        res.json("Item Saved!");
-      })
-      .catch((err) => {
-        res.status(400).json("Error : " + err);
-      });
+router.route("/").post((req, res) => {
+  const newpointsCalculator = new PointsCalculator({
+    forRupee: req.body.forRupee,
+    givenPoints: req.body.givenPoints,
+    forPoints: req.body.forPoints,
+    givenDiscount: req.body.givenDiscount,
   });
+
+  newpointsCalculator
+    .save()
+    .then(() => {
+      res.json("Item Saved!");
+    })
+    .catch((err) => {
+      res.status(400).json("Error : " + err);
+    });
+});
 
 router
   .route("/")
