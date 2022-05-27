@@ -10,12 +10,14 @@
   "author": "Anmol Pansari",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.1143.0",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.2.3",
+    "multer": "^1.4.4",
     "nodemon": "^2.0.15",
     "passport": "^0.5.2",
     "passport-jwt": "^4.0.0"

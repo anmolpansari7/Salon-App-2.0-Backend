@@ -4,85 +4,89 @@ let Customer = require("../models/customer.model");
 let ServiceSchema = require("../models/service.model");
 let Order = require("../models/order.model");
 
-// let passport = require("passport");
-// require("../passport-config")(passport);
+let passport = require("passport");
+require("../passport-config")(passport);
 
-router.route("/").get((req, res) => {
-  let type = req.query.type;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
-  let name = req.query.name;
-  let queryPattern = new RegExp(name, "gi");
+router
+  .route("/")
+  .get(passport.authenticate("jwt", { session: false }), (req, res) => {
+    let type = req.query.type;
+    let startDate = req.query.startDate;
+    let endDate = req.query.endDate;
+    let name = req.query.name;
+    let queryPattern = new RegExp(name, "gi");
 
-  let matchObj;
-  if (!name) {
-    if (!startDate) {
-      let newDate = new Date();
-      const currYear = newDate.getFullYear();
-      newDate.setFullYear(currYear - 20);
-      startDate = newDate;
-    } else {
-      startDate = new Date(startDate);
-      startDate.setHours(0, 0, 0, 0);
-    }
+    let matchObj;
+    if (!name) {
+      if (!startDate) {
+        let newDate = new Date();
+        const currYear = newDate.getFullYear();
+        newDate.setFullYear(currYear - 20);
+        startDate = newDate;
+      } else {
+        startDate = new Date(startDate);
+        startDate.setHours(0, 0, 0, 0);
+      }
 
-    if (!endDate) {
-      endDate = new Date();
-    } else {
-      endDate = new Date(endDate);
-      endDate.setHours(23, 59, 59, 100);
-    }
+      if (!endDate) {
+        endDate = new Date();
+      } else {
+        endDate = new Date(endDate);
+        endDate.setHours(23, 59, 59, 100);
+      }
 
-    matchObj = {
-      createdAt: { $gte: startDate, $lte: endDate },
-    };
-
-    if (type === "visited") {
       matchObj = {
-        updatedAt: { $gte: startDate, $lte: endDate },
+        createdAt: { $gte: startDate, $lte: endDate },
       };
-    } else if (type === "non-visited") {
+
+      if (type === "visited") {
+        matchObj = {
+          updatedAt: { $gte: startDate, $lte: endDate },
+        };
+      } else if (type === "non-visited") {
+        matchObj = {
+          $nor: [{ updatedAt: { $gte: startDate, $lte: endDate } }],
+        };
+      }
+    } else {
       matchObj = {
-        $nor: [{ updatedAt: { $gte: startDate, $lte: endDate } }],
+        $or: [
+          { name: { $regex: queryPattern } },
+          { contact: { $regex: queryPattern } },
+        ],
       };
     }
-  } else {
-    matchObj = {
-      $or: [
-        { name: { $regex: queryPattern } },
-        { contact: { $regex: queryPattern } },
-      ],
-    };
-  }
 
-  Customer.aggregate([
-    {
-      $match: matchObj,
-    },
-    {
-      $sort: { updatedAt: -1 },
-    },
-  ])
-    .then((customer) => res.json(customer))
-    .catch((err) => res.status(400).json("Error: " + err));
-});
+    Customer.aggregate([
+      {
+        $match: matchObj,
+      },
+      {
+        $sort: { updatedAt: -1 },
+      },
+    ])
+      .then((customer) => res.json(customer))
+      .catch((err) => res.status(400).json("Error: " + err));
+  });
 
-router.route("/todays-birthday").get((req, res) => {
-  Customer.find({
-    $expr: {
-      $and: [
-        { $eq: [{ $dayOfMonth: "$dob" }, { $dayOfMonth: new Date() }] },
-        { $eq: [{ $month: "$dob" }, { $month: new Date() }] },
-      ],
-    },
-  })
-    .then((customer) => res.json(customer))
-    .catch((err) => res.status(400).json("Error: " + err));
-});
+router
+  .route("/todays-birthday")
+  .get(passport.authenticate("jwt", { session: false }), (req, res) => {
+    Customer.find({
+      $expr: {
+        $and: [
+          { $eq: [{ $dayOfMonth: "$dob" }, { $dayOfMonth: new Date() }] },
+          { $eq: [{ $month: "$dob" }, { $month: new Date() }] },
+        ],
+      },
+    })
+      .then((customer) => res.json(customer))
+      .catch((err) => res.status(400).json("Error: " + err));
+  });
 
-router.route("/:query").get(
-  //   passport.authenticate("jwt", { session: false }),
-  (req, res) => {
+router
+  .route("/:query")
+  .get(passport.authenticate("jwt", { session: false }), (req, res) => {
     const { query } = req.params;
     const queryPattern = new RegExp(query, "gi");
 
@@ -94,12 +98,11 @@ router.route("/:query").get(
     })
       .then((customer) => res.json(customer))
       .catch((err) => res.status(400).json("Error: " + err));
-  }
-);
+  });
 
-router.route("/details/:id").get(
-  //   passport.authenticate("jwt", { session: false }),
-  (req, res) => {
+router
+  .route("/details/:id")
+  .get(passport.authenticate("jwt", { session: false }), (req, res) => {
     const { id } = req.params;
 
     Customer.aggregate([
@@ -185,284 +188,285 @@ router.route("/details/:id").get(
         res.json(customer[0]);
       })
       .catch((err) => res.status(400).json("Error : " + err));
-  }
-);
+  });
 
-router.route("/details/:id/orders").get((req, res) => {
-  const { id } = req.params;
-  let staff = req.query.staff;
-  let startDate = req.query.startDate;
-  let endDate = req.query.endDate;
+router
+  .route("/details/:id/orders")
+  .get(passport.authenticate("jwt", { session: false }), (req, res) => {
+    const { id } = req.params;
+    let staff = req.query.staff;
+    let startDate = req.query.startDate;
+    let endDate = req.query.endDate;
 
-  if (!startDate) {
-    let newDate = new Date();
-    const currYear = newDate.getFullYear();
-    newDate.setFullYear(currYear - 20);
-    startDate = newDate;
-  } else {
-    startDate = new Date(startDate);
-    startDate.setHours(0, 0, 0, 0);
-  }
+    if (!startDate) {
+      let newDate = new Date();
+      const currYear = newDate.getFullYear();
+      newDate.setFullYear(currYear - 20);
+      startDate = newDate;
+    } else {
+      startDate = new Date(startDate);
+      startDate.setHours(0, 0, 0, 0);
+    }
 
-  if (!endDate) {
-    endDate = new Date();
-  } else {
-    endDate = new Date(endDate);
-    endDate.setHours(23, 59, 59, 100);
-  }
+    if (!endDate) {
+      endDate = new Date();
+    } else {
+      endDate = new Date(endDate);
+      endDate.setHours(23, 59, 59, 100);
+    }
 
-  const matchObj = {
-    createdAt: { $gte: startDate, $lte: endDate },
-  };
+    const matchObj = {
+      createdAt: { $gte: startDate, $lte: endDate },
+    };
 
-  if (staff) {
-    matchObj["servedBy"] = staff;
-  }
+    if (staff) {
+      matchObj["servedBy"] = staff;
+    }
 
-  matchObj["customerId"] = id;
+    matchObj["customerId"] = id;
 
-  Order.aggregate([
-    {
-      $match: matchObj,
-    },
-    {
-      $unwind: {
-        path: "$serviceIds",
-        preserveNullAndEmptyArrays: true,
+    Order.aggregate([
+      {
+        $match: matchObj,
       },
-    },
-    { $set: { serviceId: { $toObjectId: "$serviceIds" } } },
-    { $unset: "serviceIds" },
-    {
-      $lookup: {
-        from: "services",
-        let: {
-          serviceId: "$serviceId",
+      {
+        $unwind: {
+          path: "$serviceIds",
+          preserveNullAndEmptyArrays: true,
         },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $eq: ["$_id", "$$serviceId"],
+      },
+      { $set: { serviceId: { $toObjectId: "$serviceIds" } } },
+      { $unset: "serviceIds" },
+      {
+        $lookup: {
+          from: "services",
+          let: {
+            serviceId: "$serviceId",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$serviceId"],
+                },
               },
             },
-          },
-          {
-            $project: {
-              _id: 0,
-              name: 1,
-            },
-          },
-        ],
-        as: "serviceName",
-      },
-    },
-    {
-      $unwind: {
-        path: "$serviceName",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $unset: "serviceId",
-    },
-    { $set: { serviceName: "$serviceName.name" } },
-    {
-      $group: {
-        _id: "$_id",
-        type: { $first: "$type" },
-        serviceName: { $push: "$serviceName" },
-        inventoryItemIds: { $first: "$inventoryItemIds" },
-        packageId: { $first: "$packageId" },
-        totalAmount: { $first: "$totalAmount" },
-        discountGiven: { $first: "$discountGiven" },
-        paidAmount: { $first: "$paidAmount" },
-        paymentMode: { $first: "$paymentMode" },
-        promoCode: { $first: "$promoCode" },
-        pointsUsed: { $first: "$pointsUsed" },
-        pointsEarned: { $first: "$pointsEarned" },
-        remark: { $first: "$remark" },
-        servedBy: { $first: "$servedBy" },
-        createdAt: { $first: "$createdAt" },
-      },
-    },
-    {
-      $group: {
-        _id: "$_id",
-        type: { $first: "$type" },
-        serviceName: { $push: "$serviceName" },
-        inventoryItemIds: { $first: "$inventoryItemIds" },
-        packageId: { $first: "$packageId" },
-        totalAmount: { $first: "$totalAmount" },
-        discountGiven: { $first: "$discountGiven" },
-        paidAmount: { $first: "$paidAmount" },
-        paymentMode: { $first: "$paymentMode" },
-        promoCode: { $first: "$promoCode" },
-        pointsUsed: { $first: "$pointsUsed" },
-        pointsEarned: { $first: "$pointsEarned" },
-        remark: { $first: "$remark" },
-        servedBy: { $first: "$servedBy" },
-        createdAt: { $first: "$createdAt" },
-      },
-    },
-    {
-      $unwind: {
-        path: "$inventoryItemIds",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    { $set: { inventoryItemId: { $toObjectId: "$inventoryItemIds" } } },
-    { $unset: "inventoryItemIds" },
-    {
-      $lookup: {
-        from: "inventoryitems",
-        let: {
-          inventoryItemId: "$inventoryItemId",
-        },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $eq: ["$_id", "$$inventoryItemId"],
+            {
+              $project: {
+                _id: 0,
+                name: 1,
               },
             },
-          },
-          {
-            $project: {
-              _id: 0,
-              name: 1,
-            },
-          },
-        ],
-        as: "inventoryItemName",
-      },
-    },
-    {
-      $unwind: {
-        path: "$inventoryItemName",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $unset: "inventoryItemId",
-    },
-    { $set: { inventoryItemName: "$inventoryItemName.name" } },
-    {
-      $group: {
-        _id: "$_id",
-        type: { $first: "$type" },
-        serviceName: { $first: "$serviceName" },
-        inventoryItemName: { $push: "$inventoryItemName" },
-        packageId: { $first: "$packageId" },
-        totalAmount: { $first: "$totalAmount" },
-        discountGiven: { $first: "$discountGiven" },
-        paidAmount: { $first: "$paidAmount" },
-        paymentMode: { $first: "$paymentMode" },
-        promoCode: { $first: "$promoCode" },
-        pointsUsed: { $first: "$pointsUsed" },
-        pointsEarned: { $first: "$pointsEarned" },
-        remark: { $first: "$remark" },
-        servedBy: { $first: "$servedBy" },
-        createdAt: { $first: "$createdAt" },
-      },
-    },
-    { $set: { servedById: { $toObjectId: "$servedBy" } } },
-    {
-      $lookup: {
-        from: "staffs",
-        let: {
-          staffId: "$servedById",
+          ],
+          as: "serviceName",
         },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $eq: ["$_id", "$$staffId"],
+      },
+      {
+        $unwind: {
+          path: "$serviceName",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unset: "serviceId",
+      },
+      { $set: { serviceName: "$serviceName.name" } },
+      {
+        $group: {
+          _id: "$_id",
+          type: { $first: "$type" },
+          serviceName: { $push: "$serviceName" },
+          inventoryItemIds: { $first: "$inventoryItemIds" },
+          packageId: { $first: "$packageId" },
+          totalAmount: { $first: "$totalAmount" },
+          discountGiven: { $first: "$discountGiven" },
+          paidAmount: { $first: "$paidAmount" },
+          paymentMode: { $first: "$paymentMode" },
+          promoCode: { $first: "$promoCode" },
+          pointsUsed: { $first: "$pointsUsed" },
+          pointsEarned: { $first: "$pointsEarned" },
+          remark: { $first: "$remark" },
+          servedBy: { $first: "$servedBy" },
+          createdAt: { $first: "$createdAt" },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          type: { $first: "$type" },
+          serviceName: { $push: "$serviceName" },
+          inventoryItemIds: { $first: "$inventoryItemIds" },
+          packageId: { $first: "$packageId" },
+          totalAmount: { $first: "$totalAmount" },
+          discountGiven: { $first: "$discountGiven" },
+          paidAmount: { $first: "$paidAmount" },
+          paymentMode: { $first: "$paymentMode" },
+          promoCode: { $first: "$promoCode" },
+          pointsUsed: { $first: "$pointsUsed" },
+          pointsEarned: { $first: "$pointsEarned" },
+          remark: { $first: "$remark" },
+          servedBy: { $first: "$servedBy" },
+          createdAt: { $first: "$createdAt" },
+        },
+      },
+      {
+        $unwind: {
+          path: "$inventoryItemIds",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      { $set: { inventoryItemId: { $toObjectId: "$inventoryItemIds._id" } } },
+      { $unset: "inventoryItemIds" },
+      {
+        $lookup: {
+          from: "inventoryitems",
+          let: {
+            inventoryItemId: "$inventoryItemId",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$inventoryItemId"],
+                },
               },
             },
-          },
-          {
-            $project: {
-              _id: 0,
-              name: 1,
-            },
-          },
-        ],
-        as: "staffMemberName",
-      },
-    },
-    {
-      $unwind: {
-        path: "$staffMemberName",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $unset: "servedById",
-    },
-    { $set: { servedBy: "$staffMemberName.name" } },
-    { $unset: "staffMemberName" },
-    ///,
-    {
-      $set: {
-        packageId: {
-          $cond: {
-            if: { $eq: ["$packageId", ""] },
-            then: new mongoose.Types.ObjectId(),
-            else: { $toObjectId: "$packageId" },
-          },
-        },
-      },
-    },
-    {
-      $lookup: {
-        from: "packages",
-        let: {
-          packageId: "$packageId",
-        },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $eq: ["$_id", "$$packageId"],
+            {
+              $project: {
+                _id: 0,
+                name: 1,
               },
             },
+          ],
+          as: "inventoryItemName",
+        },
+      },
+      {
+        $unwind: {
+          path: "$inventoryItemName",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unset: "inventoryItemId",
+      },
+      { $set: { inventoryItemName: "$inventoryItemName.name" } },
+      {
+        $group: {
+          _id: "$_id",
+          type: { $first: "$type" },
+          serviceName: { $first: "$serviceName" },
+          inventoryItemName: { $push: "$inventoryItemName" },
+          packageId: { $first: "$packageId" },
+          totalAmount: { $first: "$totalAmount" },
+          discountGiven: { $first: "$discountGiven" },
+          paidAmount: { $first: "$paidAmount" },
+          paymentMode: { $first: "$paymentMode" },
+          promoCode: { $first: "$promoCode" },
+          pointsUsed: { $first: "$pointsUsed" },
+          pointsEarned: { $first: "$pointsEarned" },
+          remark: { $first: "$remark" },
+          servedBy: { $first: "$servedBy" },
+          createdAt: { $first: "$createdAt" },
+        },
+      },
+      { $set: { servedById: { $toObjectId: "$servedBy" } } },
+      {
+        $lookup: {
+          from: "staffs",
+          let: {
+            staffId: "$servedById",
           },
-          {
-            $project: {
-              _id: 0,
-              name: 1,
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$staffId"],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                name: 1,
+              },
+            },
+          ],
+          as: "staffMemberName",
+        },
+      },
+      {
+        $unwind: {
+          path: "$staffMemberName",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unset: "servedById",
+      },
+      { $set: { servedBy: "$staffMemberName.name" } },
+      { $unset: "staffMemberName" },
+      ///,
+      {
+        $set: {
+          packageId: {
+            $cond: {
+              if: { $eq: ["$packageId", ""] },
+              then: new mongoose.Types.ObjectId(),
+              else: { $toObjectId: "$packageId" },
             },
           },
-        ],
-        as: "packageName",
+        },
       },
-    },
-    {
-      $unwind: {
-        path: "$packageName",
-        preserveNullAndEmptyArrays: true,
+      {
+        $lookup: {
+          from: "packages",
+          let: {
+            packageId: "$packageId",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$packageId"],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                name: 1,
+              },
+            },
+          ],
+          as: "packageName",
+        },
       },
-    },
-    {
-      $unset: "packageId",
-    },
-    { $set: { packageName: "$packageName.name" } },
-    {
-      $sort: {
-        createdAt: -1,
+      {
+        $unwind: {
+          path: "$packageName",
+          preserveNullAndEmptyArrays: true,
+        },
       },
-    },
-  ])
-    .then((order) => {
-      res.json(order);
-    })
-    .catch((err) => res.status(400).json("Error : " + err));
-});
+      {
+        $unset: "packageId",
+      },
+      { $set: { packageName: "$packageName.name" } },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+    ])
+      .then((order) => {
+        res.json(order);
+      })
+      .catch((err) => res.status(400).json("Error : " + err));
+  });
 
-router.route("/add").post(
-  //   passport.authenticate("jwt", { session: false }),
-  (req, res) => {
+router
+  .route("/add")
+  .post(passport.authenticate("jwt", { session: false }), (req, res) => {
     const gender = req.body.gender;
     const name = req.body.name;
     const contact = req.body.contact;
@@ -487,14 +491,13 @@ router.route("/add").post(
       .save()
       .then(() => res.json(newCustomer._id))
       .catch((err) => res.status(400).json("Error: " + err));
-  }
-);
+  });
 
 // Update Dues and Points
 
-router.route("/update-dues-points/:id").patch(
-  //   passport.authenticate("jwt", { session: false }),
-  (req, res) => {
+router
+  .route("/update-dues-points/:id")
+  .patch(passport.authenticate("jwt", { session: false }), (req, res) => {
     const { id } = req.params;
     const dues = Number(req.body.dues);
     const points = Number(req.body.points);
@@ -510,7 +513,6 @@ router.route("/update-dues-points/:id").patch(
           .catch((err) => res.status(400).json("Error : " + err));
       })
       .catch((err) => res.status(400).json("Error : " + err));
-  }
-);
+  });
 
 module.exports = router;

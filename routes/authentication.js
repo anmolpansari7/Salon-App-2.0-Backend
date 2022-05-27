@@ -52,7 +52,7 @@ router.route("/login").post((req, res) => {
             name: owner.name,
           };
           let token = await jwt.sign(params, process.env.JWT_PRIVATE_KEY, {
-            expiresIn: "24h",
+            expiresIn: "365d",
           });
           res.json({ token: token });
         } else {
@@ -70,7 +70,7 @@ router.route("/login").post((req, res) => {
             name: branch.name,
           };
           let token = await jwt.sign(params, process.env.JWT_PRIVATE_KEY, {
-            expiresIn: "24h",
+            expiresIn: "365d",
           });
           res.json({ token: token });
         } else {
@@ -81,49 +81,53 @@ router.route("/login").post((req, res) => {
   }
 });
 
-router.route("/change-owner-password").patch(async (req, res) => {
-  const newPassword = req.body.newPassword;
-  const currentPassword = req.body.currentPassword;
-  const newHashedPassword = await bcrypt.hash(newPassword, 10);
+router
+  .route("/change-owner-password")
+  .patch(passport.authenticate("jwt", { session: false }), async (req, res) => {
+    const newPassword = req.body.newPassword;
+    const currentPassword = req.body.currentPassword;
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
 
-  Owner.findOne({ name: "Owner" })
-    .then(async (owner) => {
-      const match = await bcrypt.compare(currentPassword, owner.password);
-      if (match) {
-        owner.password = newHashedPassword;
-        owner
-          .save()
-          .then(() => res.json("Password Changed!"))
-          .catch((err) => res.status(400).json("Err : " + err));
-      } else {
-        res.status(401).json("UnAuthorized!");
-      }
-    })
-    .catch((err) => res.status(400).json("Err : " + err));
-});
+    Owner.findOne({ name: "Owner" })
+      .then(async (owner) => {
+        const match = await bcrypt.compare(currentPassword, owner.password);
+        if (match) {
+          owner.password = newHashedPassword;
+          owner
+            .save()
+            .then(() => res.json("Password Changed!"))
+            .catch((err) => res.status(400).json("Err : " + err));
+        } else {
+          res.status(401).json("UnAuthorized!");
+        }
+      })
+      .catch((err) => res.status(400).json("Err : " + err));
+  });
 
-router.route("/change-branch-password").patch(async (req, res) => {
-  const newPassword = req.body.newPassword;
-  const currentPassword = req.body.currentPassword;
-  const branchId = req.body.branchId;
-  const newHashedPassword = await bcrypt.hash(newPassword, 10);
+router
+  .route("/change-branch-password")
+  .patch(passport.authenticate("jwt", { session: false }), async (req, res) => {
+    const newPassword = req.body.newPassword;
+    const currentPassword = req.body.currentPassword;
+    const branchId = req.body.branchId;
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
 
-  const owner = await Owner.findOne({ name: "Owner" });
-  const ownerPassword = owner.password;
+    const owner = await Owner.findOne({ name: "Owner" });
+    const ownerPassword = owner.password;
 
-  Branch.findById(branchId)
-    .then(async (branch) => {
-      const match = await bcrypt.compare(currentPassword, ownerPassword);
-      if (match) {
-        branch.password = newHashedPassword;
-        branch
-          .save()
-          .then(() => res.json("Password Changed!"))
-          .catch((err) => res.status(400).json("Err : " + err));
-      } else {
-        res.status(401).json("UnAuthorized!");
-      }
-    })
-    .catch((err) => res.status(400).json("Err : " + err));
-});
+    Branch.findById(branchId)
+      .then(async (branch) => {
+        const match = await bcrypt.compare(currentPassword, ownerPassword);
+        if (match) {
+          branch.password = newHashedPassword;
+          branch
+            .save()
+            .then(() => res.json("Password Changed!"))
+            .catch((err) => res.status(400).json("Err : " + err));
+        } else {
+          res.status(401).json("UnAuthorized!");
+        }
+      })
+      .catch((err) => res.status(400).json("Err : " + err));
+  });
 module.exports = router;
