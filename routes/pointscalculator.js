@@ -4,17 +4,15 @@ let PointsCalculator = require("../models/points-calculator.model");
 let passport = require("passport");
 require("../passport-config")(passport);
 
-router
-  .route("/")
-  .get(passport.authenticate("jwt", { session: false }), (req, res) => {
-    PointsCalculator.findOne()
-      .then((data) => {
-        res.json(data);
-      })
-      .catch((err) => {
-        res.status(400).json("Error : " + err);
-      });
-  });
+router.route("/").get((req, res) => {
+  PointsCalculator.findOne()
+    .then((data) => {
+      res.json(data);
+    })
+    .catch((err) => {
+      res.status(400).json("Error : " + err);
+    });
+});
 
 router
   .route("/")
