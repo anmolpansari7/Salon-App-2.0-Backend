@@ -17,26 +17,24 @@ router
       .catch((err) => res.status(400).json("Err : " + err));
   });
 
-router
-  .route("/register-owner")
-  .post(passport.authenticate("jwt", { session: false }), async (req, res) => {
-    try {
-      const hashedPassword = await bcrypt.hash(req.body.password, 10);
-      const name = "Owner";
+router.route("/register-owner").post(async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const name = "Owner";
 
-      const newOwner = new Owner({
-        name: name,
-        password: hashedPassword,
-      });
+    const newOwner = new Owner({
+      name: name,
+      password: hashedPassword,
+    });
 
-      newOwner
-        .save()
-        .then(() => res.json("Owner Added Successfully !"))
-        .catch((err) => res.status(400).json("Err : " + err));
-    } catch {
-      res.json("Faild to Register");
-    }
-  });
+    newOwner
+      .save()
+      .then(() => res.json("Owner Added Successfully !"))
+      .catch((err) => res.status(400).json("Err : " + err));
+  } catch {
+    res.json("Faild to Register");
+  }
+});
 
 router.route("/login").post((req, res) => {
   const selectedBranch = req.body.selectedBranch;
