@@ -5,15 +5,13 @@ const Branch = require("../models/branch.model");
 let passport = require("passport");
 require("../passport-config")(passport);
 
-router
-  .route("/")
-  .get(passport.authenticate("jwt", { session: false }), (req, res) => {
-    Branch.find({
-      status: "active",
-    })
-      .then((branches) => res.json(branches))
-      .catch((err) => res.status(400).json("Error :" + err));
-  });
+router.route("/").get((req, res) => {
+  Branch.find({
+    status: "active",
+  })
+    .then((branches) => res.json(branches))
+    .catch((err) => res.status(400).json("Error :" + err));
+});
 
 router
   .route("/add")
