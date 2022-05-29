@@ -10,6 +10,8 @@
   "author": "Anmol Pansari",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-sns": "^3.100.0",
+    "@aws-sdk/credential-providers": "^3.100.0",
     "aws-sdk": "^2.1143.0",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
