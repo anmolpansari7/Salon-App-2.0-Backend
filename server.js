@@ -31,8 +31,7 @@ const staffRouter = require("./routes/staff");
 const authenticationRouter = require("./routes/authentication");
 const orderRouter = require("./routes/order");
 const reportRouter = require("./routes/report");
-
-// const sendSMSRouter = require("./routes/send_sms");
+const messageRouter = require("./routes/message");
 
 app.use("/service", serviceRouter);
 app.use("/customer", customerRouter);
@@ -46,8 +45,7 @@ app.use("/staff", staffRouter);
 app.use("/authentication", authenticationRouter);
 app.use("/order", orderRouter);
 app.use("/report", reportRouter);
-
-// app.use("/send_sms", sendSMSRouter);
+app.use("/message", messageRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);

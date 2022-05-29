@@ -2,7 +2,7 @@ const router = require("express").Router();
 const Staff = require("../models/staff.model");
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
-const { uploadFile, getFileStream } = require("./s3");
+const { uploadFile, getFileStream, deleteFile } = require("./s3");
 
 // after uploading to s3 remove from server upload folder
 const fs = require("fs");
@@ -78,10 +78,15 @@ router.route("/images").post(upload.single("image"), async (req, res) => {
 });
 
 router.route("/images/:key").get((req, res) => {
-  console.log(req.params);
   const key = req.params.key;
   const readStream = getFileStream(key);
   readStream.pipe(res);
+});
+
+router.route("/images/:key").delete((req, res) => {
+  const key = req.params.key;
+  const result = deleteFile(key);
+  res.send("File Deleted Successfully !");
 });
 
 router
@@ -103,6 +108,37 @@ router
         .save()
         .then(() => res.json("Staff Added !"))
         .catch((err) => res.status(400).json("Error : " + err));
+    }
+  );
+
+router
+  .route("/:id")
+  .patch(
+    [passport.authenticate("jwt", { session: false }), upload.single("image")],
+    (req, res) => {
+      const id = req.params.id;
+
+      Staff.findById(id)
+        .then((staff) => {
+          staff.gender = req.body.gender;
+          staff.name = req.body.name;
+          staff.contact = req.body.contact;
+          staff.dob = req.body.dob;
+          staff.address = req.body.address;
+          staff.aadhar = req.body.aadhar;
+
+          staff
+            .save()
+            .then(() => {
+              res.json("Staff Data Updated !");
+            })
+            .catch((err) => {
+              res.status(400).json("Error : " + err);
+            });
+        })
+        .catch((err) => {
+          res.status(400).json("Error : " + err);
+        });
     }
   );
 
