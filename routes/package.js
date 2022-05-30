@@ -166,6 +166,7 @@ router
       .then((customer) => {
         customer.package.push(pack);
         customer.save();
+
         res.json("Package Assigned ! ");
       })
       .catch((err) => {

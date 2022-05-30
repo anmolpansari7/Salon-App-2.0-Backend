@@ -17,6 +17,9 @@ router.route("/").get((req, res) => {
 });
 
 router.route("/").post((req, res) => {
+  const reqContacts = req.body.recipients;
+  console.log(reqContacts);
+
   const credentials = fromNodeProviderChain();
   const snsClient = new SNSClient({ credentials });
   // const params = {
@@ -44,6 +47,7 @@ router.route("/").post((req, res) => {
     };
     smsPromiseArray.push(snsClient.send(new PublishCommand(params)));
   });
+
   Promise.all(smsPromiseArray)
     .then((resolve) => {
       console.log("resolved", resolve);
@@ -75,6 +79,15 @@ router.route("/").post((req, res) => {
   //   smsPromiseArray.push(run);
   // });
   // smsPromiseArray.forEach((p) => p());
+  const newMessage = {
+    content: req.body.message,
+    recipients: req.body.recipients,
+  };
+
+  // newMessage
+  //   .save()
+  //   .then(() => res.json("Message added!"))
+  //   .catch((err) => res.status(400).json("Error : " + err));
 });
 
 module.exports = router;
