@@ -16,10 +16,14 @@ router.route("/").get((req, res) => {
 
 router.route("/").post((req, res) => {
   const newpointsCalculator = new PointsCalculator({
-    forRupee: req.body.forRupee,
-    givenPoints: req.body.givenPoints,
-    forPoints: req.body.forPoints,
-    givenDiscount: req.body.givenDiscount,
+    forRupeeMale: req.body.forRupeeMale,
+    givenPointsMale: req.body.givenPointsMale,
+    forPointsMale: req.body.forPointsMale,
+    givenDiscountMale: req.body.givenDiscountMale,
+    forRupeeFemale: req.body.forRupeeFemale,
+    givenPointsFemale: req.body.givenPointsFemale,
+    forPointsFemale: req.body.forPointsFemale,
+    givenDiscountFemale: req.body.givenDiscountFemale,
   });
 
   newpointsCalculator
@@ -37,19 +41,22 @@ router
   .patch(passport.authenticate("jwt", { session: false }), (req, res) => {
     PointsCalculator.findOne()
       .then((pointsCalculator) => {
-        pointsCalculator.forRupee = req.body.forRupee;
-        pointsCalculator.givenPoints = req.body.givenPoints;
-        pointsCalculator.forPoints = req.body.forPoints;
-        pointsCalculator.givenDiscount = req.body.givenDiscount;
-
-        pointsCalculator
-          .save()
-          .then(() => {
-            res.json("Points Calculator Changed !");
-          })
-          .catch((err) => {
-            res.status(400).json("Error : " + err);
-          });
+        (pointsCalculator.forRupeeMale = req.body.forRupeeMale),
+          (pointsCalculator.givenPointsMale = req.body.givenPointsMale),
+          (pointsCalculator.forPointsMale = req.body.forPointsMale),
+          (pointsCalculator.givenDiscountMale = req.body.givenDiscountMale),
+          (pointsCalculator.forRupeeFemale = req.body.forRupeeFemale),
+          (pointsCalculator.givenPointsFemale = req.body.givenPointsFemale),
+          (pointsCalculator.forPointsFemale = req.body.forPointsFemale),
+          (pointsCalculator.givenDiscountFemale = req.body.givenDiscountFemale),
+          pointsCalculator
+            .save()
+            .then(() => {
+              res.json("Points Calculator Changed !");
+            })
+            .catch((err) => {
+              res.status(400).json("Error : " + err);
+            });
       })
       .catch((err) => {
         res.status(400).json("Error : " + err);

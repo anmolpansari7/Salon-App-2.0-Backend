@@ -4,10 +4,14 @@ const Schema = mongoose.Schema;
 
 const pointsCalculatorSchema = new Schema(
   {
-    forRupee: Number,
-    givenPoints: Number,
-    forPoints: Number,
-    givenDiscount: Number,
+    forRupeeMale: Number,
+    givenPointsMale: Number,
+    forPointsMale: Number,
+    givenDiscountMale: Number,
+    forRupeeFemale: Number,
+    givenPointsFemale: Number,
+    forPointsFemale: Number,
+    givenDiscountFemale: Number,
   },
   {
     timestamps: true,
