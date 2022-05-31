@@ -13,13 +13,11 @@ const staffSchema = new Schema(
     },
     contact: {
       type: String,
-      required: true,
       trim: true,
       index: true,
     },
     dob: {
       type: Date,
-      required: true,
     },
     address: String,
     due: Number,
