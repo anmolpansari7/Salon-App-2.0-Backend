@@ -90,6 +90,7 @@ router
           maxUsage: { $first: "$maxUsage" },
           services: { $push: "$services" },
           customers: { $first: "$customers" },
+          status: { $first: "$status" },
         },
       },
       {
@@ -113,6 +114,7 @@ router
       packageAmount: req.body.packageAmount,
       maxUsage: req.body.maxUsage,
       validFor: req.body.validFor,
+      status: req.body.status,
       customers: [],
     });
 
@@ -141,6 +143,9 @@ router
           ],
         },
       },
+      {
+        $match: { status: "active" },
+      },
     ])
       .then((packages) => {
         res.json(packages);
@@ -168,6 +173,28 @@ router
         customer.save();
 
         res.json("Package Assigned ! ");
+      })
+      .catch((err) => {
+        res.status(400).json("Error : " + err);
+      });
+  });
+
+router
+  .route("/:id")
+  .patch(passport.authenticate("jwt", { session: false }), (req, res) => {
+    const packageId = req.params.id;
+    Package.findById(packageId)
+      .then((pack) => {
+        pack.status = "deleted";
+
+        pack
+          .save()
+          .then(() => {
+            res.json("Package Deleted !");
+          })
+          .catch((err) => {
+            res.status(400).json("Error : " + err);
+          });
       })
       .catch((err) => {
         res.status(400).json("Error : " + err);

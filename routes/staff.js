@@ -42,6 +42,7 @@ router
 
       matchObj = {
         createdAt: { $gte: startDate, $lte: endDate },
+        status: { $eq: "active" },
       };
       if (gender !== "") {
         matchObj["gender"] = gender;
@@ -91,55 +92,73 @@ router.route("/images/:key").delete((req, res) => {
 
 router
   .route("/")
-  .post(
-    [passport.authenticate("jwt", { session: false }), upload.single("image")],
-    (req, res) => {
-      const newStaffMember = new Staff({
-        gender: req.body.gender,
-        name: req.body.name,
-        contact: req.body.contact,
-        dob: req.body.dob,
-        address: req.body.address,
-        due: req.body.due,
-        aadhar: req.body.aadhar,
-      });
+  .post(passport.authenticate("jwt", { session: false }), (req, res) => {
+    const newStaffMember = new Staff({
+      gender: req.body.gender,
+      name: req.body.name,
+      contact: req.body.contact,
+      dob: req.body.dob,
+      address: req.body.address,
+      due: req.body.due,
+      aadhar: req.body.aadhar,
+      status: req.body.status,
+    });
 
-      newStaffMember
-        .save()
-        .then(() => res.json("Staff Added !"))
-        .catch((err) => res.status(400).json("Error : " + err));
-    }
-  );
+    newStaffMember
+      .save()
+      .then(() => res.json("Staff Added !"))
+      .catch((err) => res.status(400).json("Error : " + err));
+  });
 
 router
   .route("/:id")
-  .patch(
-    [passport.authenticate("jwt", { session: false }), upload.single("image")],
-    (req, res) => {
-      const id = req.params.id;
+  .patch(passport.authenticate("jwt", { session: false }), (req, res) => {
+    const id = req.params.id;
 
-      Staff.findById(id)
-        .then((staff) => {
-          staff.gender = req.body.gender;
-          staff.name = req.body.name;
-          staff.contact = req.body.contact;
-          staff.dob = req.body.dob;
-          staff.address = req.body.address;
-          staff.aadhar = req.body.aadhar;
+    Staff.findById(id)
+      .then((staff) => {
+        staff.gender = req.body.gender;
+        staff.name = req.body.name;
+        staff.contact = req.body.contact;
+        staff.dob = req.body.dob;
+        staff.address = req.body.address;
+        staff.aadhar = req.body.aadhar;
 
-          staff
-            .save()
-            .then(() => {
-              res.json("Staff Data Updated !");
-            })
-            .catch((err) => {
-              res.status(400).json("Error : " + err);
-            });
-        })
-        .catch((err) => {
-          res.status(400).json("Error : " + err);
-        });
-    }
-  );
+        staff
+          .save()
+          .then(() => {
+            res.json("Staff Data Updated !");
+          })
+          .catch((err) => {
+            res.status(400).json("Error : " + err);
+          });
+      })
+      .catch((err) => {
+        res.status(400).json("Error : " + err);
+      });
+  });
+
+router
+  .route("/remove/:id")
+  .patch(passport.authenticate("jwt", { session: false }), (req, res) => {
+    const id = req.params.id;
+    Staff.findById(id)
+      .then((staff) => {
+        staff.status = req.body.status;
+
+        staff
+          .save()
+          .then(() => {
+            const result = deleteFile(staff.aadhar);
+            res.json("Staff Removed !");
+          })
+          .catch((err) => {
+            res.status(400).json("Error : " + err);
+          });
+      })
+      .catch((err) => {
+        res.status(400).json("Error : " + err);
+      });
+  });
 
 module.exports = router;

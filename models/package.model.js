@@ -11,6 +11,7 @@ const packageSchema = new Schema(
     packageAmount: Number,
     maxUsage: Number,
     validFor: String,
+    status: String,
     customers: { type: Array, default: [] },
   },
   {

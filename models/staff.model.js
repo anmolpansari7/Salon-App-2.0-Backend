@@ -24,6 +24,7 @@ const staffSchema = new Schema(
     address: String,
     due: Number,
     aadhar: String,
+    status: String,
   },
   {
     timestamps: true,
