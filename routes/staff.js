@@ -72,6 +72,10 @@ router
 router.route("/images").post(upload.single("image"), async (req, res) => {
   const file = req.file;
   console.log(file);
+  if (!file) {
+    res.send("No file found!");
+    return;
+  }
   const result = await uploadFile(file);
   console.log("result", result);
   await unlinkFile(file.path);
@@ -80,6 +84,10 @@ router.route("/images").post(upload.single("image"), async (req, res) => {
 
 router.route("/images/:key").get((req, res) => {
   const key = req.params.key;
+  if (!key) {
+    res.send("No Key Found for Image File.");
+    return;
+  }
   const readStream = getFileStream(key);
   readStream.pipe(res);
 });
