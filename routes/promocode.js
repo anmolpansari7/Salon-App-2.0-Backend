@@ -33,8 +33,8 @@ router
 
     let matchObj = {
       $nor: [
-        { validFrom: { $gt: endDate } },
-        { validTill: { $lt: startDate } },
+        { validFrom: { $gte: endDate } },
+        { validTill: { $lte: startDate } },
       ],
     };
 
@@ -43,10 +43,10 @@ router
     } else if (status === "active") {
       matchObj = {
         $nor: [
-          { validFrom: { $gt: endDate } },
-          { validFrom: { $gt: new Date() } },
-          { validTill: { $lt: startDate } },
-          { validTill: { $lt: new Date() } },
+          { validFrom: { $gte: endDate } },
+          { validFrom: { $gte: new Date() } },
+          { validTill: { $lte: startDate } },
+          { validTill: { $lte: new Date() } },
         ],
       };
       matchObj["status"] = "";
@@ -103,19 +103,26 @@ router
 
 router
   .route("/create")
-  .post(passport.authenticate("jwt", { session: false }), (req, res) => {
-    const newPromoCode = new PromoCode({
-      promoCode: req.body.promoCode,
-      validFrom: req.body.validFrom,
-      validTill: req.body.validTill,
-      discountType: req.body.discountType,
-      discountValue: req.body.discountValue,
-    });
-
-    newPromoCode
-      .save()
-      .then(() => res.json("PromoCode Saved !"))
-      .catch((err) => res.status(400).json("Error: " + err));
+  .post(passport.authenticate("jwt", { session: false }), async (req, res) => {
+    const promo = await PromoCode.findOne({ promoCode: req.body.promoCode });
+    if (promo) {
+      res.json({
+        message: `Promo code "${req.body.promoCode}" already exists.`,
+        exists: true,
+      });
+    } else {
+      const newPromoCode = new PromoCode({
+        promoCode: req.body.promoCode,
+        validFrom: new Date(req.body.validFrom).setHours(0, 0, 0, 0),
+        validTill: new Date(req.body.validTill).setHours(23, 59, 59, 99),
+        discountType: req.body.discountType,
+        discountValue: req.body.discountValue,
+      });
+      newPromoCode
+        .save()
+        .then(() => res.json("PromoCode Saved !"))
+        .catch((err) => res.status(400).json("Error: " + err));
+    }
   });
 
 router

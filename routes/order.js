@@ -39,7 +39,7 @@ router
       newOrder.totalAmount - newOrder.paidAmount
     }\n Points Earned: ${
       newOrder.pointsEarned
-    }\n Thank You!\n Come Back Soon...`;
+    }\n Thank You!\n Come Back Soon...\n Style Zone`;
 
     if (newOrder.type === "package-usage") {
       const query = {
@@ -59,10 +59,10 @@ router
       });
 
       const currPack = await Package.findById(newOrder.packageId);
-      messageContent = `Package Usage Successful!\n Pakage Name: ${currPack.name}\n Usage Left: ${UsageLeft} \n Thank You!\n Come Back Soon...`;
+      messageContent = `Package Usage Successful!\n Pakage Name: ${currPack.name}\n Usage Left: ${UsageLeft} \n Thank You!\n Come Back Soon...\n Style Zone`;
     } else if (newOrder.type === "package-assign") {
       const currPack = await Package.findById(newOrder.packageId);
-      messageContent = `Package Assigned! \n Package Name: ${currPack.name}\n Valid for: ${currPack.validFor} \n Usage Left: ${currPack.maxUsage} \n Thank You!\n Come Back Soon...`;
+      messageContent = `Package Assigned! \n Package Name: ${currPack.name}\n Valid for: ${currPack.validFor} \n Usage Left: ${currPack.maxUsage} \n Thank You!\n Come Back Soon...\n Style Zone`;
     } else if (newOrder.inventoryItemIds.length > 0) {
       newOrder.inventoryItemIds.forEach(async (item) => {
         const query = {
@@ -91,10 +91,8 @@ router
         const run = async () => {
           try {
             const data = await snsClient.send(new PublishCommand(params));
-            console.log("Success.", data);
             res.send(data);
           } catch (err) {
-            console.log("Error", err.stack);
             res.json("Error : " + err);
           }
         };

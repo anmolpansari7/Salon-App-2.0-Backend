@@ -50,7 +50,6 @@ router.route("/").post((req, res) => {
 
   Promise.all(smsPromiseArray)
     .then((resolve) => {
-      console.log("resolved", resolve);
       res.send(resolve);
     })
     .catch((err) => {

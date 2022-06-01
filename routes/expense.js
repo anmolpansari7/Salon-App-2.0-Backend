@@ -266,7 +266,6 @@ router
       },
     ])
       .then((expense) => {
-        // console.log("expense", expense);
         res.json(expense);
       })
       .catch((err) => res.status(400).json("Error :" + err));

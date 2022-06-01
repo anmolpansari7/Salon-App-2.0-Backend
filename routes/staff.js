@@ -71,13 +71,11 @@ router
 
 router.route("/images").post(upload.single("image"), async (req, res) => {
   const file = req.file;
-  console.log(file);
   if (!file) {
     res.send("No file found!");
     return;
   }
   const result = await uploadFile(file);
-  console.log("result", result);
   await unlinkFile(file.path);
   res.send(result);
 });
